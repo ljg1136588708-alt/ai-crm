@@ -1,0 +1,12 @@
+onlyBuiltDependencies:
+  - sharp
+  - "@clerk/nextjs"
+
+minimumReleaseAgeExclude:
+  - "@clerk/backend"
+  - "@clerk/nextjs"
+  - "@clerk/react"
+  - "@clerk/shared"
+
+allowBuilds:
+  sharp: true
