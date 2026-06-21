@@ -37,12 +37,15 @@ export default async function OnboardingPage() {
             Revoke access anytime from your Google Account settings
           </p>
         </div>
-        <p className="text-amber-600 text-sm">
-          <Sparkles className="inline w-3 h-3 mr-1" />
-          Gmail integration coming soon — Clerk + Google OAuth setup in progress.
-        </p>
-        <Link href="/dashboard" className="block mt-6">
-          <Button variant="outline">Back to Dashboard</Button>
+        <a
+          href="/api/gmail/auth"
+          className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white font-medium px-6 py-2.5 hover:bg-violet-700 transition-colors"
+        >
+          <Mail className="w-4 h-4 mr-2" />
+          Connect Gmail
+        </a>
+        <Link href="/dashboard" className="block mt-4">
+          <Button variant="outline" size="sm">Back to Dashboard</Button>
         </Link>
       </Card>
     </div>
