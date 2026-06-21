@@ -116,6 +116,7 @@ export default function GeneratePage() {
 
       const genResult: GenerationResult = {
         image: data.image,
+        imageUrl: data.imageUrl,
         prompt: data.prompt,
         timestamp: Date.now(),
       };
