@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getServiceClient } from '@/lib/supabase/client';
 import { getPipelineStats, getDeals } from '@/lib/supabase/queries';
-import { ScanEmailsButton } from '@/components/scan-emails-button';
+import { ScanEmailsButton, SeedDemoButton } from '@/components/scan-emails-button';
 import { Mail, CircleDollarSign, User, Building2 } from 'lucide-react';
 import type { DealStage } from '@/types';
 
@@ -103,7 +103,10 @@ export default async function DashboardPage() {
           <p className="text-zinc-500 mb-6 max-w-md mx-auto">
             AI will scan your recent emails, extract contacts and deals, and build your pipeline.
           </p>
-          <ScanEmailsButton />
+          <div className="flex items-center justify-center gap-3">
+            <ScanEmailsButton />
+            <SeedDemoButton />
+          </div>
         </Card>
       </div>
     );
@@ -126,6 +129,7 @@ export default async function DashboardPage() {
         </div>
         <div className="flex items-center gap-2">
           <ScanEmailsButton />
+          <SeedDemoButton />
           <Link href="/dashboard/contacts">
             <Button variant="outline" size="sm">Contacts</Button>
           </Link>

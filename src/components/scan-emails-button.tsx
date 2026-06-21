@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ScanLine, Loader2 } from 'lucide-react';
+import { ScanLine, Loader2, Database, Sparkles } from 'lucide-react';
 
 export function ScanEmailsButton() {
   const [scanning, setScanning] = useState(false);
@@ -33,6 +33,39 @@ export function ScanEmailsButton() {
         <ScanLine className="w-3 h-3 mr-1" />
       )}
       {scanning ? 'Scanning…' : 'Scan Emails'}
+    </Button>
+  );
+}
+
+export function SeedDemoButton() {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSeed = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/seed', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        router.refresh();
+      } else {
+        alert(data.error || 'Seed failed');
+      }
+    } catch {
+      alert('Seed failed — please try again');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Button onClick={handleSeed} disabled={loading} size="default">
+      {loading ? (
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      ) : (
+        <Sparkles className="w-4 h-4 mr-2" />
+      )}
+      {loading ? 'Loading…' : 'Load Demo Data'}
     </Button>
   );
 }
