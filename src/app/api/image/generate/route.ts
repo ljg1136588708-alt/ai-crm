@@ -2,66 +2,100 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import OpenAI from 'openai';
+import { getServiceClient } from '@/lib/supabase/client';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const FREE_QUOTA = 5;
 
 const STYLE_PROMPTS: Record<string, string> = {
   '写实摄影': 'photorealistic, professional photography, detailed texture, natural lighting',
-  '动漫': 'anime style, vibrant colors, clean lines',
+  '动漫': 'anime style, vibrant colors, clean lines, cel shading',
   '水彩': 'watercolor painting style, soft edges, translucent colors',
-  '素描': 'pencil sketch, monochrome, detailed linework',
+  '素描': 'pencil sketch, monochrome, detailed linework, hand-drawn',
   '赛博朋克': 'cyberpunk style, neon lights, futuristic city, high contrast',
-  '油画': 'oil painting style, rich textures, brush strokes',
-  '电影感': 'cinematic lighting, film grain, dramatic composition',
-  '仙侠': 'Chinese xianxia fantasy style, ethereal, flowing robes, mystical atmosphere',
-  '日漫': 'Japanese manga style, expressive, dynamic composition',
-  '复古': 'vintage retro style, warm tones, film photography look',
-  '科幻': 'sci-fi style, futuristic technology, space',
-  'Q版': 'chibi style, cute, big head small body, adorable',
-  '贴纸': 'sticker design, white border, die-cut look, flat colors',
-  '游戏CG': 'video game CG render, highly detailed, dramatic lighting',
-  '手办': 'figurine photography, miniature, shallow depth of field',
-  '美漫': 'American comic book style, bold lines, halftone dots',
-  '废土科幻': 'post-apocalyptic wasteland, desolate, gritty',
-  '3D卡通': '3D cartoon render, Pixar-style, smooth, colorful',
-  '吉卜力': 'Studio Ghibli style, hand-drawn animation, whimsical, nature-rich',
-  '国漫2D': 'Chinese donghua 2D style, elegant, ink-wash influence',
-  '国漫3D': 'Chinese donghua 3D style, detailed character, dynamic poses',
+  '油画': 'oil painting style, rich textures, visible brush strokes',
+  '电影感': 'cinematic lighting, film grain, anamorphic lens, dramatic composition',
+  '仙侠': 'Chinese xianxia fantasy style, ethereal, flowing robes, mystical atmosphere, guofeng',
+  '日漫': 'Japanese manga style, expressive, dynamic composition, screen tone',
+  '复古': 'vintage retro style, warm tones, film photography look, analog',
+  '科幻': 'sci-fi style, futuristic technology, space, sleek design',
+  'Q版': 'chibi style, cute proportions, big head small body, adorable, kawaii',
+  '贴纸': 'sticker design, white border, die-cut look, flat vector colors',
+  '游戏CG': 'video game CG render, highly detailed, dramatic lighting, unreal engine',
+  '手办': 'figurine photography, miniature, shallow depth of field, collectible',
+  '美漫': 'American comic book style, bold ink lines, halftone dots, superhero',
+  '废土科幻': 'post-apocalyptic wasteland, desolate, gritty, Mad Max style',
+  '3D卡通': '3D cartoon render, Pixar-style, smooth, colorful, playful',
+  '吉卜力': 'Studio Ghibli style, hand-drawn animation, whimsical, nature-rich, soft colors',
+  '国漫2D': 'Chinese donghua 2D style, elegant, ink-wash influence, guochao',
+  '国漫3D': 'Chinese donghua 3D style, detailed character, dynamic poses, guoman',
 };
 
 const SIZES: Record<string, string> = {
-  '1:1': '1024x1024',
-  '2:3': '1024x1536',
-  '3:2': '1536x1024',
-  '3:4': '1024x1536',
-  '4:3': '1536x1024',
-  '9:16': '1024x1792',
-  '16:9': '1792x1024',
-  '21:9': '2560x1080',
+  '1:1': '1024x1024', '2:3': '1024x1536', '3:2': '1536x1024',
+  '3:4': '1024x1536', '4:3': '1536x1024', '9:16': '1024x1792',
+  '16:9': '1792x1024', '21:9': '2560x1080',
 };
+
+async function getOrCreateUser(clerkId: string) {
+  const supabase = getServiceClient();
+  const { data: existing } = await supabase.from('users').select('*').eq('clerk_id', clerkId).single();
+  if (existing) return existing;
+  
+  const { data: created } = await supabase.from('users').insert({
+    clerk_id: clerkId,
+    quota_remaining: FREE_QUOTA,
+    quota_total: FREE_QUOTA,
+  }).select().single();
+  return created;
+}
+
+async function checkAndDecrementQuota(clerkId: string) {
+  const supabase = getServiceClient();
+  const { data: user } = await supabase.from('users').select('quota_remaining').eq('clerk_id', clerkId).single();
+  if (!user || user.quota_remaining <= 0) return { allowed: false, remaining: user?.quota_remaining ?? 0 };
+  
+  const { data: updated } = await supabase.from('users')
+    .update({ quota_remaining: user.quota_remaining - 1 })
+    .eq('clerk_id', clerkId)
+    .select('quota_remaining, quota_total')
+    .single();
+  
+  return { allowed: true, remaining: updated?.quota_remaining ?? 0, total: updated?.quota_total ?? FREE_QUOTA };
+}
+
+async function saveToHistory(clerkId: string, imageUrl: string, prompt: string) {
+  const supabase = getServiceClient();
+  await supabase.from('generations').insert({
+    clerk_id: clerkId,
+    image_url: imageUrl,
+    prompt,
+  });
+}
 
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Quota check
+  await getOrCreateUser(userId);
+  const quota = await checkAndDecrementQuota(userId);
+  if (!quota.allowed) {
+    return NextResponse.json({ error: 'Free quota used. Please upgrade.', quota: quota.remaining }, { status: 402 });
+  }
+
   const body = await req.json();
   const { prompt, referenceImage, style, aspectRatio, format } = body as {
-    prompt?: string;
-    referenceImage?: string; // base64 data URL
-    style?: string;
-    aspectRatio?: string;
-    format?: string;
+    prompt?: string; referenceImage?: string; style?: string;
+    aspectRatio?: string; format?: string;
   };
 
   if (!prompt && !referenceImage) {
     return NextResponse.json({ error: 'Provide prompt or reference image' }, { status: 400 });
   }
 
-  // Build full prompt
   const styleAddon = style && STYLE_PROMPTS[style] ? `, ${STYLE_PROMPTS[style]}` : '';
   const fullPrompt = `${prompt || 'A beautiful image'}${styleAddon}`;
-
-  // Determine size
   const size = SIZES[aspectRatio || '1:1'] || '1024x1024';
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
@@ -71,35 +105,46 @@ export async function POST(req: Request) {
       prompt: fullPrompt,
       n: 1,
       size,
-      response_format: outputFormat === 'jpeg' ? 'b64_json' : 'b64_json',
+      response_format: 'b64_json',
     };
-
-    // Image-to-image: pass reference as input image
-    if (referenceImage) {
-      // GPT Image API uses the 'image' parameter for image-to-image
-      params.image = referenceImage;
-    }
+    if (referenceImage) params.image = referenceImage;
 
     const response = await openai.images.generate(params);
-
     const imageData = response.data?.[0];
     const base64 = imageData?.b64_json;
     if (!imageData || !base64) {
+      // Refund quota on failure
+      const supabase = getServiceClient();
+      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
       return NextResponse.json({ error: 'No image returned' }, { status: 500 });
     }
 
-    // Return base64 image
     const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
     const dataUrl = `data:${mimeType};base64,${base64}`;
+
+    // Save to Supabase Storage
+    const supabase = getServiceClient();
+    const buffer = Buffer.from(base64, 'base64');
+    const filename = `${userId}/${Date.now()}.${outputFormat}`;
+    await supabase.storage.from('generations').upload(filename, buffer, {
+      contentType: mimeType,
+      upsert: false,
+    });
+    const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
+
+    await saveToHistory(userId, urlData.publicUrl, fullPrompt);
 
     return NextResponse.json({
       success: true,
       image: dataUrl,
-      size,
-      format: outputFormat,
-      prompt: fullPrompt,
+      imageUrl: urlData.publicUrl,
+      size, format: outputFormat, prompt: fullPrompt,
+      quota: { remaining: quota.remaining, total: quota.total },
     });
   } catch (err: any) {
+    // Refund quota on error
+    const supabase = getServiceClient();
+    await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
     console.error('Image generation error:', err);
     return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 });
   }

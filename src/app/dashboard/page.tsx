@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 
 const STYLES = [
@@ -35,7 +36,15 @@ export default function GeneratePage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [history, setHistory] = useState<GenerationResult[]>([]);
+  const [quota, setQuota] = useState<{ remaining: number; total: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Load quota
+  useEffect(() => {
+    fetch('/api/image/quota').then(r => r.json()).then(d => {
+      if (d.remaining !== undefined) setQuota(d);
+    }).catch(() => {});
+  }, []);
 
   // Load history from localStorage
   useEffect(() => {
@@ -81,7 +90,13 @@ export default function GeneratePage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed');
+      if (!res.ok) {
+        if (res.status === 402) {
+          setQuota({ remaining: 0, total: data.quota ?? 5 });
+          throw new Error('Free quota used up. Upgrade to Pro.');
+        }
+        throw new Error(data.error || 'Failed');
+      }
 
       const genResult: GenerationResult = {
         image: data.image,
@@ -90,6 +105,8 @@ export default function GeneratePage() {
       };
       setResult(genResult);
       saveToHistory(genResult);
+      // Refresh quota
+      if (data.quota) setQuota(data.quota);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -107,6 +124,18 @@ export default function GeneratePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* Quota badge */}
+      {quota && (
+        <div className="flex items-center justify-between mb-4">
+          <span className={`text-xs px-2 py-1 rounded-full ${quota.remaining > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+            {quota.remaining} / {quota.total} free
+          </span>
+          {quota.remaining === 0 && (
+            <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">Upgrade →</Link>
+          )}
+        </div>
+      )}
+
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-zinc-100 rounded-lg p-1">
         {(['text', 'image'] as const).map((m) => (
