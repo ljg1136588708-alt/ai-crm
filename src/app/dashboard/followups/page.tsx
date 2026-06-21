@@ -3,11 +3,11 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { getServiceClient } from '@/lib/supabase/client';
 import { getFollowups } from '@/lib/supabase/queries';
 import { ArrowLeft, Mail, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { GenerateFollowupsButton } from '@/components/followup-button';
+import { DismissFollowupButton } from '@/components/dismiss-followup-button';
 
 export default async function FollowupsPage() {
   const { userId } = await auth();
@@ -113,17 +113,20 @@ export default async function FollowupsPage() {
                   })}
                 </span>
 
-                {f.draft_email_body && (
-                  <a
-                    href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(f.contactEmail || '')}&su=${encodeURIComponent(f.draft_email_subject || '')}&body=${encodeURIComponent(f.draft_email_body)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
-                  >
-                    <Mail size={12} />
-                    Open in Gmail
-                  </a>
-                )}
+                <div className="flex items-center gap-2">
+                  {f.draft_email_body && (
+                    <a
+                      href={`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(f.contactEmail || '')}&su=${encodeURIComponent(f.draft_email_subject || '')}&body=${encodeURIComponent(f.draft_email_body)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
+                    >
+                      <Mail size={12} />
+                      Open in Gmail
+                    </a>
+                  )}
+                  <DismissFollowupButton followupId={f.id} />
+                </div>
               </div>
             </Card>
           ))}

@@ -149,7 +149,8 @@ export default async function DashboardPage() {
               </div>
               <div className="space-y-3">
                 {stageDeals.map((deal: any) => (
-                  <Card key={deal.id} className="p-3 hover:shadow-md transition-shadow cursor-pointer">
+                  <Link key={deal.id} href={`/dashboard/contacts/${deal.contact_id || ''}`}>
+                    <Card className="p-3 hover:shadow-md transition-shadow cursor-pointer">
                     <h4 className="font-medium text-sm mb-1">{deal.title}</h4>
                     {deal.amount && (
                       <div className="flex items-center gap-1 text-xs text-zinc-500 mb-1">
@@ -177,6 +178,7 @@ export default async function DashboardPage() {
                       </div>
                     )}
                   </Card>
+                  </Link>
                 ))}
               </div>
             </div>

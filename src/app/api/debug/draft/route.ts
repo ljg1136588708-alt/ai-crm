@@ -1,12 +1,12 @@
 // GET /api/debug/draft — test followup drafting for a single contact
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (process.env.NODE_ENV === 'production' && !process.env.ENABLE_DEBUG) {
+    return NextResponse.json({ error: 'Debug disabled in production' }, { status: 403 });
+  }
 
   const result: Record<string, any> = {};
 

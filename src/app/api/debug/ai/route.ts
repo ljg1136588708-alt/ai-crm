@@ -1,10 +1,11 @@
-// GET /api/debug/ai — test OpenRouter Claude connectivity
+// GET /api/debug/ai — test OpenRouter Claude connectivity (gated)
 import { NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
 
 export async function GET() {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  // Only available in development or with explicit opt-in
+  if (process.env.NODE_ENV === 'production' && !process.env.ENABLE_DEBUG) {
+    return NextResponse.json({ error: 'Debug disabled in production' }, { status: 403 });
+  }
 
   const results: Record<string, any> = {};
 

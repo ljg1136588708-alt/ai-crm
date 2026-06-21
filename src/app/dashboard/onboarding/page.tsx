@@ -1,16 +1,26 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
-
-export const dynamic = 'force-dynamic';
-
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Mail, Sparkles, Check } from 'lucide-react';
+import { Mail, Check, CheckCircle2 } from 'lucide-react';
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
+  if (!userId) redirect('/sign-in');
+
+  // Check if Gmail already connected
+  const { getServiceClient } = await import('@/lib/supabase/client');
+  const supabase = getServiceClient();
+  const { data: user } = await supabase
+    .from('users')
+    .select('gmail_connected')
+    .eq('clerk_id', userId)
+    .single();
+
+  if (user?.gmail_connected) {
+    redirect('/dashboard');
+  }
 
   return (
     <div className="max-w-lg mx-auto py-16 px-6">
