@@ -1,6 +1,6 @@
 import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
-import { BarChart3, Users, Bell, Settings, Sparkles } from 'lucide-react';
+import { BarChart3, Users, Bell, Settings } from 'lucide-react';
 
 const nav = [
   { href: '/dashboard', label: 'Pipeline', icon: BarChart3 },
