@@ -4,7 +4,7 @@ import type { ExtractionResult } from '@/types';
 // Use OpenRouter as Anthropic API proxy (region-accessible)
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
-  baseURL: 'https://openrouter.ai/api/v1',
+  baseURL: 'https://openrouter.ai/api',
   defaultHeaders: {
     'HTTP-Referer': 'https://ai-crm-red-pi.vercel.app',
     'X-Title': 'AI CRM',
