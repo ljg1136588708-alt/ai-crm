@@ -1,4 +1,4 @@
-// POST /api/image/generate — text-to-image or image-to-image via OpenAI Responses API
+// POST /api/image/generate — text-to-image or image-to-image via OpenAI Images API
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -84,20 +84,17 @@ export async function POST(req: Request) {
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
-    const tool: Record<string, unknown> = {
-      type: 'image_generation',
-      size,
-      output: 'b64_json',
-    };
-    if (referenceImage) tool.image = referenceImage;
-
+    // gpt-image-1.5 returns b64_json by default, do NOT pass response_format
     const bodyObj: Record<string, unknown> = {
       model: 'gpt-image-1.5',
-      input: fullPrompt,
-      tools: [tool],
+      prompt: fullPrompt,
+      n: 1,
+      size,
     };
 
-    const response = await fetch('https://api.openai.com/v1/responses', {
+    if (referenceImage) bodyObj.image = referenceImage;
+
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -112,12 +109,10 @@ export async function POST(req: Request) {
       throw new Error(result.error?.message || `OpenAI API error ${response.status}`);
     }
 
-    // Extract base64 from response output
-    const imageOutput = result.output?.find((o: any) => o.type === 'image_generation_call');
-    const base64 = imageOutput?.result;
+    const base64 = result.data?.[0]?.b64_json;
     if (!base64) {
       await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
-      return NextResponse.json({ error: 'No image returned', debug: JSON.stringify(result).slice(0, 200) }, { status: 500 });
+      return NextResponse.json({ error: 'No image returned' }, { status: 500 });
     }
 
     const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
