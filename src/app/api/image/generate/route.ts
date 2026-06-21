@@ -1,11 +1,6 @@
 // POST /api/image/generate — text-to-image or image-to-image via OpenAI
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
-import OpenAI from 'openai';
-import { getServiceClient } from '@/lib/supabase/client';
-
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const FREE_QUOTA = 5;
 
 const STYLE_PROMPTS: Record<string, string> = {
   '写实摄影': 'photorealistic, professional photography, detailed texture, natural lighting',
@@ -37,11 +32,11 @@ const SIZES: Record<string, string> = {
   '16:9': '1792x1024', '21:9': '2560x1080',
 };
 
-async function getOrCreateUser(clerkId: string) {
-  const supabase = getServiceClient();
+const FREE_QUOTA = 5;
+
+async function getOrCreateUser(supabase: any, clerkId: string) {
   const { data: existing } = await supabase.from('users').select('*').eq('clerk_id', clerkId).single();
   if (existing) return existing;
-  
   const { data: created } = await supabase.from('users').insert({
     clerk_id: clerkId,
     quota_remaining: FREE_QUOTA,
@@ -50,36 +45,26 @@ async function getOrCreateUser(clerkId: string) {
   return created;
 }
 
-async function checkAndDecrementQuota(clerkId: string) {
-  const supabase = getServiceClient();
+async function checkQuota(supabase: any, clerkId: string) {
   const { data: user } = await supabase.from('users').select('quota_remaining').eq('clerk_id', clerkId).single();
   if (!user || user.quota_remaining <= 0) return { allowed: false, remaining: user?.quota_remaining ?? 0 };
-  
   const { data: updated } = await supabase.from('users')
     .update({ quota_remaining: user.quota_remaining - 1 })
     .eq('clerk_id', clerkId)
-    .select('quota_remaining, quota_total')
-    .single();
-  
+    .select('quota_remaining, quota_total').single();
   return { allowed: true, remaining: updated?.quota_remaining ?? 0, total: updated?.quota_total ?? FREE_QUOTA };
-}
-
-async function saveToHistory(clerkId: string, imageUrl: string, prompt: string) {
-  const supabase = getServiceClient();
-  await supabase.from('generations').insert({
-    clerk_id: clerkId,
-    image_url: imageUrl,
-    prompt,
-  });
 }
 
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Quota check
-  await getOrCreateUser(userId);
-  const quota = await checkAndDecrementQuota(userId);
+  // Lazy-load Supabase (avoids import at top level causing build issues)
+  const { getServiceClient } = await import('@/lib/supabase/client');
+  const supabase = getServiceClient();
+
+  await getOrCreateUser(supabase, userId);
+  const quota = await checkQuota(supabase, userId);
   if (!quota.allowed) {
     return NextResponse.json({ error: 'Free quota used. Please upgrade.', quota: quota.remaining }, { status: 402 });
   }
@@ -100,21 +85,32 @@ export async function POST(req: Request) {
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
-    const params: any = {
+    const bodyObj: Record<string, unknown> = {
       model: 'gpt-image-1.5',
       prompt: fullPrompt,
       n: 1,
       size,
       response_format: 'b64_json',
     };
-    if (referenceImage) params.image = referenceImage;
+    if (referenceImage) bodyObj.image = referenceImage;
 
-    const response = await openai.images.generate(params);
-    const imageData = response.data?.[0];
-    const base64 = imageData?.b64_json;
-    if (!imageData || !base64) {
-      // Refund quota on failure
-      const supabase = getServiceClient();
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bodyObj),
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+      throw new Error(result.error?.message || `OpenAI API error ${response.status}`);
+    }
+
+    const base64 = result.data?.[0]?.b64_json;
+    if (!base64) {
       await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
       return NextResponse.json({ error: 'No image returned' }, { status: 500 });
     }
@@ -123,7 +119,6 @@ export async function POST(req: Request) {
     const dataUrl = `data:${mimeType};base64,${base64}`;
 
     // Save to Supabase Storage
-    const supabase = getServiceClient();
     const buffer = Buffer.from(base64, 'base64');
     const filename = `${userId}/${Date.now()}.${outputFormat}`;
     await supabase.storage.from('generations').upload(filename, buffer, {
@@ -132,7 +127,12 @@ export async function POST(req: Request) {
     });
     const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
 
-    await saveToHistory(userId, urlData.publicUrl, fullPrompt);
+    // Save to history
+    await supabase.from('generations').insert({
+      clerk_id: userId,
+      image_url: urlData.publicUrl,
+      prompt: fullPrompt,
+    });
 
     return NextResponse.json({
       success: true,
@@ -142,8 +142,6 @@ export async function POST(req: Request) {
       quota: { remaining: quota.remaining, total: quota.total },
     });
   } catch (err: any) {
-    // Refund quota on error
-    const supabase = getServiceClient();
     await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
     console.error('Image generation error:', err);
     return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 });
