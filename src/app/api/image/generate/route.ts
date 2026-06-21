@@ -35,11 +35,21 @@ const SIZES: Record<string, string> = {
   '16:9': '1792x1024', '21:9': '2560x1080',
 };
 
-const FREE_QUOTA = 5;
+const FREE_QUOTA = 50;
 
 async function getOrCreateUser(supabase: any, clerkId: string) {
   const { data: existing } = await supabase.from('users').select('*').eq('clerk_id', clerkId).single();
-  if (existing) return existing;
+  if (existing) {
+    // Reset quota for existing users during testing phase
+    if (existing.quota_remaining <= 0) {
+      await supabase.from('users').update({
+        quota_remaining: FREE_QUOTA,
+        quota_total: FREE_QUOTA,
+      }).eq('clerk_id', clerkId);
+      return { ...existing, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA };
+    }
+    return existing;
+  }
   const { data: created } = await supabase.from('users').insert({
     clerk_id: clerkId,
     quota_remaining: FREE_QUOTA,
