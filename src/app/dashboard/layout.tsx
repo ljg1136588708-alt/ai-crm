@@ -1,4 +1,3 @@
-import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { BarChart3, Users, Settings } from 'lucide-react';
 
@@ -29,8 +28,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-zinc-200">
-          <UserButton />
+        <div className="p-4 border-t border-zinc-200 text-sm text-zinc-400">
+          Sign in to continue
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
