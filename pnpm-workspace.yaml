@@ -9,4 +9,6 @@ minimumReleaseAgeExclude:
   - "@clerk/shared"
 
 allowBuilds:
+  '@parcel/watcher': set this to true or false
+  '@swc/core': set this to true or false
   sharp: true
