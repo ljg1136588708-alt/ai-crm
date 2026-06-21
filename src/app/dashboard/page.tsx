@@ -136,7 +136,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {stages.map((stage) => {
           const stageDeals = (deals as any[]).filter((d) => d.stage === stage);
           return (
