@@ -1,10 +1,6 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
 import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { BarChart3, Users, Settings } from 'lucide-react';
-
-export const dynamic = 'force-dynamic';
 
 const nav = [
   { href: '/dashboard', label: 'Pipeline', icon: BarChart3 },
@@ -12,10 +8,7 @@ const nav = [
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
-
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 border-r border-zinc-200 flex flex-col bg-zinc-50/50">
