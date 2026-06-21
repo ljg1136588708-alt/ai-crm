@@ -135,6 +135,8 @@ export async function POST() {
     message: `Generated ${generated} follow-up reminder${generated !== 1 ? 's' : ''}.`,
     generated,
     errors: errors.length > 0 ? errors : undefined,
+    version: 'v3-native-fetch-haiku-extractjson',
+    env_has_key: !!process.env.ANTHROPIC_API_KEY,
     success: true,
   });
 }
