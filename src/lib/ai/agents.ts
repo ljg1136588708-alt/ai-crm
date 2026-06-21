@@ -11,8 +11,8 @@ const anthropic = new Anthropic({
   },
 });
 
-const HAIKU = 'anthropic/claude-haiku-4-20250515';
-const SONNET = 'anthropic/claude-sonnet-4-20250514';
+const HAIKU = 'anthropic/claude-haiku-4.5';
+const SONNET = 'anthropic/claude-sonnet-4.6';
 
 // ─── Extractor: pull contacts + deals from email ─────
 
