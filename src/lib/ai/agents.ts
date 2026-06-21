@@ -61,7 +61,7 @@ Return ONLY valid JSON:
 If there's no business deal or contact to extract, return { "contact": null, "deal": null }`;
 
   const text = await claude(
-    HAIKU,
+    MODEL,
     prompt,
     `Subject: ${emailSubject}\nFrom: ${senderName} <${senderEmail}>\n\n${emailSnippet}`,
     300,
@@ -84,7 +84,7 @@ export async function classifyDealStage(
   context: string,
 ): Promise<{ stage: string; confidence: number; reason: string }> {
   const text = await claude(
-    HAIKU,
+    MODEL,
     `You classify sales deal stages. Return ONLY JSON: { "stage": "lead|contacted|negotiation|won|lost", "confidence": 0-1, "reason": "brief explanation" }`,
     `Deal: "${dealTitle}"\n\nContext:\n${context}`,
     200,
@@ -103,7 +103,7 @@ export async function draftFollowupEmail(
   recentContext: string,
 ): Promise<{ subject: string; body: string }> {
   const text = await claude(
-    SONNET,
+    MODEL,
     `You are an AI that drafts professional, concise follow-up emails.
 
 Write a follow-up email that:
@@ -130,7 +130,7 @@ export async function answerQuery(
   schemaContext: string,
 ): Promise<string> {
   const text = await claude(
-    SONNET,
+    MODEL,
     `You are a CRM query assistant. Given a user's question and their CRM data context, provide a clear, concise answer in natural language. Be conversational and helpful. If you cannot answer from the context, say so. Keep it under 3 sentences.`,
     `Question: ${question}\n\nCRM Data:\n${schemaContext}`,
     300,
