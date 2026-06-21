@@ -1,6 +1,9 @@
-// POST /api/image/generate — text-to-image or image-to-image via OpenAI Images API
+// POST /api/image/generate — text-to-image or image-to-image via APIYI (Nano Banana 2)
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
+
+const APIYI_BASE = 'https://api.apiyi.com/v1';
+const MODEL = 'gemini-3.1-flash-image';
 
 const STYLE_PROMPTS: Record<string, string> = {
   '写实摄影': 'photorealistic, professional photography, detailed texture, natural lighting',
@@ -84,24 +87,24 @@ export async function POST(req: Request) {
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
-    // gpt-image-1.5 returns b64_json by default, do NOT pass response_format
+    // APIYI Nano Banana 2 — supports image input for image-to-image
     const bodyObj: Record<string, unknown> = {
-      model: 'gpt-image-1.5',
+      model: MODEL,
       prompt: fullPrompt,
       n: 1,
       size,
     };
 
-    // Reference image: gpt-image-1.5 Images API doesn't support 'image' param.
-    // Best-effort: use prompt-based style transfer.
     if (referenceImage) {
-      bodyObj.prompt = `${fullPrompt || 'Transform the uploaded image into the selected style while preserving composition.'}\n\nThe result should look like a styled version of an uploaded photo.`;
+      // Nano Banana 2 supports image reference via the Gemini format.
+      // Try OpenAI-compatible 'image' param first; fallback to prompt-based.
+      bodyObj.image = referenceImage;
     }
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const response = await fetch(`${APIYI_BASE}/images/generations`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(bodyObj),
