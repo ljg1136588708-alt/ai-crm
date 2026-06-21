@@ -36,6 +36,20 @@ async function claude(model: string, system: string, userMessage: string, maxTok
   return data.choices?.[0]?.message?.content || '';
 }
 
+// Claude often wraps JSON in ``` fences or adds text — strip it
+function extractJson(raw: string): string {
+  // Try direct parse first
+  try { JSON.parse(raw); return raw; } catch {}
+
+  // Try to find JSON object between { and }
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (match) {
+    try { JSON.parse(match[0]); return match[0]; } catch {}
+  }
+
+  throw new Error(`Could not extract JSON from response: ${raw.slice(0, 200)}`);
+}
+
 // ─── Extractor: pull contacts + deals from email ─────
 
 import type { ExtractionResult } from '@/types';
@@ -69,7 +83,7 @@ If there's no business deal or contact to extract, return { "contact": null, "de
   );
 
   try {
-    const result = JSON.parse(text);
+    const result = JSON.parse(extractJson(text));
     if (!result.contact) return null;
     return result as ExtractionResult;
   } catch {
@@ -91,7 +105,7 @@ export async function classifyDealStage(
     0,
   );
 
-  return JSON.parse(text);
+  return JSON.parse(extractJson(text));
 }
 
 // ─── Drafter: follow-up email ─────────────────────────
@@ -120,7 +134,7 @@ Return ONLY JSON:
     0.7,
   );
 
-  return JSON.parse(text);
+  return JSON.parse(extractJson(text));
 }
 
 // ─── Query Engine: natural language → answer ──────────
