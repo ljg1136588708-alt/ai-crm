@@ -1,9 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { ExtractionResult } from '@/types';
 
+// Use OpenRouter as Anthropic API proxy (region-accessible)
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY!,
+  baseURL: 'https://openrouter.ai/api/v1',
+  defaultHeaders: {
+    'HTTP-Referer': 'https://ai-crm-red-pi.vercel.app',
+    'X-Title': 'AI CRM',
+  },
 });
+
+const HAIKU = 'anthropic/claude-haiku-4-20250515';
+const SONNET = 'anthropic/claude-sonnet-4-20250514';
 
 // ─── Extractor: pull contacts + deals from email ─────
 
@@ -31,7 +40,7 @@ If the email is NOT business-related (newsletter, notification, spam, automated)
 { "contact": null, "deal": null }`;
 
   const msg = await anthropic.messages.create({
-    model: 'claude-haiku-4-20250515',
+    model: HAIKU,
     max_tokens: 500,
     temperature: 0.1,
     system: prompt,
@@ -69,7 +78,7 @@ Current stage: ${currentStage}
 Return ONLY JSON.`;
 
   const msg = await anthropic.messages.create({
-    model: 'claude-haiku-4-20250515',
+    model: HAIKU,
     max_tokens: 200,
     temperature: 0,
     system: prompt,
@@ -108,7 +117,7 @@ Return ONLY JSON:
 { "subject": "...", "body": "..." }`;
 
   const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: SONNET,
     max_tokens: 500,
     temperature: 0.7,
     system: prompt,
@@ -136,7 +145,7 @@ ${schemaContext}
 Respond in plain English, max 3-4 sentences. Be specific with names and numbers.`;
 
   const msg = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: SONNET,
     max_tokens: 400,
     temperature: 0.3,
     system: prompt,
