@@ -97,19 +97,99 @@ export async function POST(req: Request) {
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
-    // APIYI Nano Banana 2 — supports image input for image-to-image
+    // For image-to-image with Gemini: use chat completions format
+    // For text-to-image: use images/generations format
+    if (referenceImage) {
+      // Use chat completions — Gemini natively supports image input
+      const messages: any[] = [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: fullPrompt || 'Transform this image into the requested style.' },
+            { type: 'image_url', image_url: { url: referenceImage } },
+          ],
+        },
+      ];
+
+      const chatResp = await fetch(`${APIYI_BASE}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages,
+          modalities: ['image'],
+          image_config: { image_size: size },
+        }),
+      });
+
+      const chatResult = await chatResp.json();
+      if (!chatResp.ok) {
+        await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+        throw new Error(chatResult.error?.message || `Chat API error ${chatResp.status}`);
+      }
+
+      // Extract image from chat response
+      const choice = chatResult.choices?.[0];
+      let base64: string | null = null;
+      
+      // Check for image in message content
+      if (choice?.message?.content) {
+        const content = choice.message.content;
+        if (Array.isArray(content)) {
+          const imgPart = content.find((p: any) => p.type === 'image_url');
+          if (imgPart?.image_url?.url) {
+            const imgUrl = imgPart.image_url.url;
+            if (imgUrl.startsWith('data:')) {
+              base64 = imgUrl.split(',')[1];
+            } else {
+              const imgResp = await fetch(imgUrl);
+              const blob = await imgResp.arrayBuffer();
+              base64 = Buffer.from(blob).toString('base64');
+            }
+          }
+        }
+      }
+      
+      // Fallback: check for b64_json in image_generation_call
+      if (!base64 && chatResult.output) {
+        const imgOutput = chatResult.output?.find((o: any) => o.type === 'image_generation_call');
+        base64 = imgOutput?.result;
+      }
+
+      if (!base64) {
+        await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+        return NextResponse.json({ error: 'No image returned', debug: JSON.stringify(chatResult).slice(0, 300) }, { status: 500 });
+      }
+
+      const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
+      const dataUrl = `data:${mimeType};base64,${base64}`;
+
+      const buffer = Buffer.from(base64, 'base64');
+      const filename = `${userId}/${Date.now()}.${outputFormat}`;
+      await supabase.storage.from('generations').upload(filename, buffer, { contentType: mimeType, upsert: false });
+      const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
+
+      await supabase.from('generations').insert({
+        clerk_id: userId, image_url: urlData.publicUrl, prompt: fullPrompt,
+      });
+
+      return NextResponse.json({
+        success: true, image: dataUrl, imageUrl: urlData.publicUrl,
+        size, format: outputFormat, prompt: fullPrompt,
+        quota: { remaining: quota.remaining, total: quota.total },
+      });
+    }
+
+    // Text-to-image: use images/generations (simpler, works)
     const bodyObj: Record<string, unknown> = {
       model: MODEL,
       prompt: fullPrompt,
       n: 1,
       size,
     };
-
-    if (referenceImage) {
-      // Nano Banana 2 supports image reference via the Gemini format.
-      // Try OpenAI-compatible 'image' param first; fallback to prompt-based.
-      bodyObj.image = referenceImage;
-    }
 
     const response = await fetch(`${APIYI_BASE}/images/generations`, {
       method: 'POST',
