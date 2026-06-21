@@ -127,7 +127,6 @@ export async function POST(req: Request) {
 
       const chatResult = await chatResp.json();
       if (!chatResp.ok) {
-        await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
         throw new Error(chatResult.error?.message || `Chat API error ${chatResp.status}`);
       }
 
@@ -160,6 +159,7 @@ export async function POST(req: Request) {
       }
 
       if (!base64) {
+        // Refund: API called but no image extracted
         await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
         return NextResponse.json({ error: 'No image returned', debug: JSON.stringify(chatResult).slice(0, 300) }, { status: 500 });
       }
@@ -202,7 +202,6 @@ export async function POST(req: Request) {
 
     const result = await response.json();
     if (!response.ok) {
-      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
       throw new Error(result.error?.message || `API error ${response.status}`);
     }
 
