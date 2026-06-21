@@ -92,8 +92,16 @@ export async function POST() {
       reason = `Follow up with ${contact.name || contact.email} — ${dealStage === 'lead' ? 'initial outreach' : dealContext || 'check in'}`;
       draftSubject = draft.subject;
       draftBody = draft.body;
-    } catch (err) {
-      console.error(`Failed to draft followup for ${contact.email}:`, err);
+    } catch (err: any) {
+      const msg = err?.message || String(err);
+      console.error(`Failed to draft followup for ${contact.email}:`, msg);
+      // Log the error
+      await supabase.from('ai_activities').insert({
+        user_id: user.id,
+        action_type: 'followup_drafted',
+        input_summary: `Contact: ${contact.name || contact.email}`,
+        output_summary: `ERROR: ${msg.slice(0, 200)}`,
+      });
       // Continue without AI draft — still generate a basic reminder
     }
 
