@@ -40,11 +40,15 @@ export default function GeneratePage() {
   const [quota, setQuota] = useState<{ remaining: number; total: number } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Load quota
-  useEffect(() => {
+  // Load quota on mount and after each generation
+  const fetchQuota = () => {
     fetch('/api/image/quota').then(r => r.json()).then(d => {
       if (d.remaining !== undefined) setQuota(d);
     }).catch(() => {});
+  };
+
+  useEffect(() => {
+    fetchQuota();
   }, []);
 
   // Load history from localStorage
@@ -79,6 +83,10 @@ export default function GeneratePage() {
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+      setError('Image too large. Please use an image under 10MB.');
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => setReferenceImage(reader.result as string);
     reader.readAsDataURL(file);
@@ -290,14 +298,17 @@ export default function GeneratePage() {
         <div className="mt-12">
           <h2 className="text-lg font-semibold mb-4">📚 历史记录</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
-            {history.map((item, i) => (
+            {history.filter(item => item.image && item.image.length > 10).map((item, i) => (
               <button
                 key={i}
                 onClick={() => setResult(item)}
                 className="aspect-square rounded-lg overflow-hidden border border-zinc-200 hover:border-violet-400 transition-colors"
               >
                 <img src={item.image} alt="" className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+                  }}
                 />
               </button>
             ))}

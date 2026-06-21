@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getServiceClient } from '@/lib/supabase/client';
 
-const FREE_QUOTA = 5;
+const FREE_QUOTA = 50;
 
 export async function GET() {
   const { userId } = await auth();

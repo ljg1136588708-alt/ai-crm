@@ -27,7 +27,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     success: true,
     items: data || [],
-    quota: user || { quota_remaining: 0, quota_total: 5 },
+    quota: user || { quota_remaining: 0, quota_total: 50 },
     total: data?.length || 0,
   });
 }

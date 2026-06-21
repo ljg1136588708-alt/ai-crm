@@ -14,7 +14,7 @@ export default function PricingPage() {
 
       <section className="max-w-2xl mx-auto px-4 py-20 text-center">
         <h1 className="text-3xl font-bold mb-4">Upgrade to Pro</h1>
-        <p className="text-zinc-500 mb-12">Free trial: 5 generations. Pro: unlimited.</p>
+        <p className="text-zinc-500 mb-12">Free trial: 50 generations. Pro: unlimited.</p>
 
         <div className="max-w-sm mx-auto border border-violet-200 rounded-2xl p-8 bg-violet-50/50">
           <div className="text-sm font-medium text-violet-600 mb-2">PRO</div>
@@ -35,7 +35,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-xs text-zinc-400 mt-8">
-          Payments powered by Stripe. No card required for free trial.
+          Coming soon. No card required for free trial.
         </p>
       </section>
 

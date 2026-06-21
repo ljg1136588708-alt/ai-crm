@@ -44,7 +44,7 @@ export default function LandingPage() {
       </section>
 
       <footer className="border-t border-zinc-200 py-8 px-6 text-center text-sm text-zinc-400">
-        © 2026 AI Foto. Powered by OpenAI.
+        © 2026 AI Foto. Powered by Nano Banana.
       </footer>
     </main>
   );
