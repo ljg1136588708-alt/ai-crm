@@ -1,9 +1,7 @@
 // AI agents — Claude via OpenRouter with native fetch
-// (avoiding Anthropic SDK compatibility issues with OpenRouter proxy)
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const SONNET = 'anthropic/claude-sonnet-4.6';
-const HAIKU = 'anthropic/claude-haiku-4.5';
+const MODEL = 'anthropic/claude-haiku-4.5';
 
 function getHeaders(): Record<string, string> {
   return {

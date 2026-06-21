@@ -36,6 +36,7 @@ export async function POST() {
   }
 
   let generated = 0;
+  const errors: string[] = [];
 
   for (const contact of staleContacts) {
     // Check if already has an active reminder
@@ -94,6 +95,7 @@ export async function POST() {
       draftBody = draft.body;
     } catch (err: any) {
       const msg = err?.message || String(err);
+      errors.push(`${contact.name || contact.email}: ${msg}`);
       console.error(`Failed to draft followup for ${contact.email}:`, msg);
       // Log the error
       await supabase.from('ai_activities').insert({
@@ -132,6 +134,7 @@ export async function POST() {
   return NextResponse.json({
     message: `Generated ${generated} follow-up reminder${generated !== 1 ? 's' : ''}.`,
     generated,
+    errors: errors.length > 0 ? errors : undefined,
     success: true,
   });
 }
