@@ -1,7 +1,13 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
 import { Card } from '@/components/ui/card';
 import { Users } from 'lucide-react';
 
-export default function ContactsPage() {
+export default async function ContactsPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
   return (
     <div className="p-8 max-w-7xl">
       <div className="flex items-center justify-between mb-8">

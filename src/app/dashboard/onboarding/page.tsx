@@ -1,3 +1,6 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
 export const dynamic = 'force-dynamic';
 
 import Link from 'next/link';
@@ -5,7 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Mail, Sparkles, Check } from 'lucide-react';
 
-export default function OnboardingPage() {
+export default async function OnboardingPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
   return (
     <div className="max-w-lg mx-auto py-16 px-6">
       <Card className="p-8 text-center">

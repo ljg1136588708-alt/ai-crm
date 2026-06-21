@@ -1,8 +1,13 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+
   const stats = { totalDeals: 0, totalValue: 0, followupCount: 0 };
 
   return (

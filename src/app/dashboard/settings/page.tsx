@@ -1,8 +1,14 @@
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
+
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings, Mail } from 'lucide-react';
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const { userId } = await auth();
+  if (!userId) redirect("/sign-in");
+
   return (
     <div className="p-8 max-w-3xl">
       <div className="mb-8">
