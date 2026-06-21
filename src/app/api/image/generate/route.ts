@@ -92,7 +92,11 @@ export async function POST(req: Request) {
       size,
     };
 
-    if (referenceImage) bodyObj.image = referenceImage;
+    // Reference image: gpt-image-1.5 Images API doesn't support 'image' param.
+    // Best-effort: use prompt-based style transfer.
+    if (referenceImage) {
+      bodyObj.prompt = `${fullPrompt || 'Transform the uploaded image into the selected style while preserving composition.'}\n\nThe result should look like a styled version of an uploaded photo.`;
+    }
 
     const response = await fetch('https://api.openai.com/v1/images/generations', {
       method: 'POST',
