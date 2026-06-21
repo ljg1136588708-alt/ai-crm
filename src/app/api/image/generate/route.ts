@@ -123,10 +123,18 @@ export async function POST(req: Request) {
     const result = await response.json();
     if (!response.ok) {
       await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
-      throw new Error(result.error?.message || `OpenAI API error ${response.status}`);
+      throw new Error(result.error?.message || `API error ${response.status}`);
     }
 
-    const base64 = result.data?.[0]?.b64_json;
+    // APIYI may return b64_json or url format
+    const imageData = result.data?.[0];
+    let base64 = imageData?.b64_json;
+    if (!base64 && imageData?.url) {
+      // Fetch the image and convert to base64
+      const imageResp = await fetch(imageData.url);
+      const blob = await imageResp.arrayBuffer();
+      base64 = Buffer.from(blob).toString('base64');
+    }
     if (!base64) {
       await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
       return NextResponse.json({ error: 'No image returned' }, { status: 500 });
