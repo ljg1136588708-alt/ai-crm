@@ -15,18 +15,21 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <section className="max-w-3xl mx-auto text-center pt-32 pb-20 px-6">
-        <h1 className="text-5xl font-bold tracking-tight leading-tight mb-6">
+      <section className="max-w-4xl mx-auto text-center pt-32 pb-20 px-6">
+        <div className="inline-block mb-6 px-4 py-1.5 rounded-full border border-violet-200 bg-violet-50 text-violet-700 text-sm font-medium">
+          🚀 Early access — free while in beta
+        </div>
+        <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
           The CRM that<br />
           <span className="text-violet-600">fills itself.</span>
         </h1>
         <p className="text-xl text-zinc-500 mb-10 max-w-xl mx-auto leading-relaxed">
-          Connect your Gmail. AI scans your emails, builds your pipeline,
-          and drafts follow-ups — so you never touch a CRM dashboard again.
+          Connect Gmail. AI scans your emails, extracts contacts & deals, and drafts follow-ups.
+          Zero data entry. No training required.
         </p>
         <div className="flex gap-4 justify-center">
           <Link href="/sign-up">
-            <Button size="lg" className="text-base px-8">Try Free — No Credit Card</Button>
+            <Button size="lg" className="text-base px-8 bg-violet-600 hover:bg-violet-700">Try Free — No Credit Card</Button>
           </Link>
           <Link href="/pricing">
             <Button size="lg" variant="outline" className="text-base px-8">View Pricing</Button>
@@ -34,23 +37,46 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* How it works */}
+      <section className="max-w-5xl mx-auto px-6 pb-24">
+        <h2 className="text-2xl font-bold text-center mb-12">How it works</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { step: '1', title: 'Connect Gmail', desc: 'One click OAuth. AI only scans business emails, skips newsletters and spam.', emoji: '🔗' },
+            { step: '2', title: 'AI Builds Pipeline', desc: 'Claude reads your conversations, extracts contacts and deals, places them on a Kanban board.', emoji: '🤖' },
+            { step: '3', title: 'Get Reminders', desc: 'AI notices stale conversations and drafts follow-up emails in your voice. You approve and send.', emoji: '📬' },
+          ].map(({ step, title, desc, emoji }) => (
+            <div key={step} className="text-center p-6">
+              <div className="text-3xl mb-3">{emoji}</div>
+              <div className="text-xs font-bold text-violet-600 mb-2">STEP {step}</div>
+              <h3 className="font-semibold mb-2">{title}</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">{desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Features */}
       <section className="max-w-5xl mx-auto px-6 pb-24 grid grid-cols-1 md:grid-cols-3 gap-8">
         {[
           {
+            icon: '⚡',
             title: 'Zero Data Entry',
-            desc: 'Connect Gmail and AI extracts contacts, companies, and deals from your existing conversations. Nothing to type.',
+            desc: 'AI extracts contacts, companies, and deals from your existing Gmail conversations. You never type a thing.',
           },
           {
+            icon: '📊',
             title: 'Pipeline on Autopilot',
-            desc: 'Deals move through stages automatically as context changes. You see what matters — who needs following up.',
+            desc: 'Deals automatically move through Lead → Contacted → Negotiation → Won. You see what matters at a glance.',
           },
           {
-            title: 'AI Drafts, You Approve',
-            desc: 'Get daily follow-up reminders with pre-written emails in your voice. Read, edit if needed, hit send.',
+            icon: '✉️',
+            title: 'AI Drafts, You Send',
+            desc: 'Daily follow-up reminders with pre-written emails. Read, edit if needed, click send. No more forgotten leads.',
           },
         ].map((f) => (
-          <div key={f.title} className="p-6 rounded-xl border border-zinc-200">
+          <div key={f.title} className="p-6 rounded-xl border border-zinc-200 hover:border-violet-300 hover:shadow-md transition-all">
+            <div className="text-2xl mb-3">{f.icon}</div>
             <h3 className="font-semibold text-lg mb-2">{f.title}</h3>
             <p className="text-zinc-500 text-sm leading-relaxed">{f.desc}</p>
           </div>
