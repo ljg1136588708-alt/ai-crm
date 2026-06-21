@@ -1,8 +1,21 @@
-import { clerkMiddleware } from '@clerk/nextjs/server';
+import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server';
 
-// Just initialize auth context, don't protect routes here
-export default clerkMiddleware();
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)',
+  '/api/((?!auth).*)', // protect API routes except auth webhook
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  if (isProtectedRoute(req)) {
+    await auth.protect();
+  }
+});
 
 export const config = {
-  matcher: ['/((?!.*\\..*|_next).*)', '/', '/(api|trpc)(.*)'],
+  matcher: [
+    // Skip Next.js internals and static files
+    '/((?!_next|.*\\.(?:ico|png|jpg|jpeg|svg|css|js|woff|woff2|ttf|eot)$).*)',
+    '/',
+    '/(api|trpc)(.*)',
+  ],
 };
