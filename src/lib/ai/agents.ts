@@ -1,20 +1,46 @@
-import Anthropic from '@anthropic-ai/sdk';
-import type { ExtractionResult } from '@/types';
+// AI agents — Claude via OpenRouter with native fetch
+// (avoiding Anthropic SDK compatibility issues with OpenRouter proxy)
 
-// Use OpenRouter as Anthropic API proxy (region-accessible)
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-  baseURL: 'https://openrouter.ai/api',
-  defaultHeaders: {
-    'HTTP-Referer': 'https://ai-crm-red-pi.vercel.app',
-    'X-Title': 'AI CRM',
-  },
-});
-
-const HAIKU = 'anthropic/claude-haiku-4.5';
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const SONNET = 'anthropic/claude-sonnet-4.6';
+const HAIKU = 'anthropic/claude-haiku-4.5';
+
+function getHeaders(): Record<string, string> {
+  return {
+    'Authorization': `Bearer ${process.env.ANTHROPIC_API_KEY || ''}`,
+    'Content-Type': 'application/json',
+    'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'https://ai-crm-red-pi.vercel.app',
+    'X-Title': 'AI CRM',
+  };
+}
+
+async function claude(model: string, system: string, userMessage: string, maxTokens = 500, temperature = 0): Promise<string> {
+  const res = await fetch(OPENROUTER_URL, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      model,
+      max_tokens: maxTokens,
+      temperature,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userMessage },
+      ],
+    }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`OpenRouter error ${res.status}: ${errText.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  return data.choices?.[0]?.message?.content || '';
+}
 
 // ─── Extractor: pull contacts + deals from email ─────
+
+import type { ExtractionResult } from '@/types';
 
 export async function extractFromEmail(
   emailSubject: string,
@@ -26,77 +52,51 @@ export async function extractFromEmail(
 
 Given an email, extract:
 - Contact: name, email, company, title (if present)
-- Deal: a short title describing the business opportunity, stage, confidence (1-5), and amount if mentioned
+- Deal: a short title describing the business discussed, the stage (lead/contacted/negotiation/won/lost), a confidence score 1-5, and amount if mentioned
 
-Deal stage options: lead (initial contact), contacted (discussing), negotiation (talking terms/pricing), won (closed), lost (dead)
-
-Return ONLY valid JSON, no other text:
+Return ONLY valid JSON:
 {
-  "contact": { "name": "...", "email": "...", "company": "..." | null, "title": "..." | null },
-  "deal": { "title": "...", "stage": "lead"|"contacted"|"negotiation", "confidence": 1-5, "amount": number | null } | null
+  "contact": { "name": "...", "email": "...", "company": "...", "title": "..." },
+  "deal": { "title": "...", "stage": "lead|contacted|negotiation|won|lost", "confidence": 1-5, "amount": null or number }
 }
 
-If the email is NOT business-related (newsletter, notification, spam, automated), return:
-{ "contact": null, "deal": null }`;
+If there's no business deal or contact to extract, return { "contact": null, "deal": null }`;
 
-  const msg = await anthropic.messages.create({
-    model: HAIKU,
-    max_tokens: 500,
-    temperature: 0.1,
-    system: prompt,
-    messages: [{
-      role: 'user',
-      content: `SUBJECT: ${emailSubject}\nFROM: ${senderName} <${senderEmail}>\n\n${emailSnippet}`,
-    }],
-  });
+  const text = await claude(
+    HAIKU,
+    prompt,
+    `Subject: ${emailSubject}\nFrom: ${senderName} <${senderEmail}>\n\n${emailSnippet}`,
+    300,
+    0,
+  );
 
   try {
-    const text = (msg.content[0] as { text: string }).text;
-    const json = JSON.parse(text);
-    if (!json.contact && !json.deal) return null;
-    return json as ExtractionResult;
+    const result = JSON.parse(text);
+    if (!result.contact) return null;
+    return result as ExtractionResult;
   } catch {
     return null;
   }
 }
 
-// ─── Classifier: determine deal stage from thread context ────
+// ─── Classifier: judge deal stage ─────────────────────
 
 export async function classifyDealStage(
-  contactName: string,
-  recentSubjects: string[],
-  currentStage: string,
-): Promise<{ stage: string; confidence: number; reason: string } | null> {
-  const prompt = `You analyze email threads and determine the current deal stage.
+  dealTitle: string,
+  context: string,
+): Promise<{ stage: string; confidence: number; reason: string }> {
+  const text = await claude(
+    HAIKU,
+    `You classify sales deal stages. Return ONLY JSON: { "stage": "lead|contacted|negotiation|won|lost", "confidence": 0-1, "reason": "brief explanation" }`,
+    `Deal: "${dealTitle}"\n\nContext:\n${context}`,
+    200,
+    0,
+  );
 
-Given a contact and recent email subjects, return:
-- stage: lead | contacted | negotiation | won | lost
-- confidence: 1-5 (how sure you are)
-- reason: one sentence explaining
-
-Current stage: ${currentStage}
-Return ONLY JSON.`;
-
-  const msg = await anthropic.messages.create({
-    model: HAIKU,
-    max_tokens: 200,
-    temperature: 0,
-    system: prompt,
-    messages: [{
-      role: 'user',
-      content: `Contact: ${contactName}\nRecent emails:\n${recentSubjects.map(s => `- ${s}`).join('\n')}`,
-    }],
-  });
-
-  try {
-    const text = (msg.content[0] as { text: string }).text;
-    return JSON.parse(text);
-  } catch {
-    return null;
-  }
+  return JSON.parse(text);
 }
 
-// ─── Drafter: write follow-up email ──────────────────
+// ─── Drafter: follow-up email ─────────────────────────
 
 export async function draftFollowupEmail(
   contactName: string,
@@ -104,7 +104,9 @@ export async function draftFollowupEmail(
   dealStage: string,
   recentContext: string,
 ): Promise<{ subject: string; body: string }> {
-  const prompt = `You are an AI that drafts professional, concise follow-up emails.
+  const text = await claude(
+    SONNET,
+    `You are an AI that drafts professional, concise follow-up emails.
 
 Write a follow-up email that:
 - Is warm but brief (3-5 sentences)
@@ -114,50 +116,45 @@ Write a follow-up email that:
 - Matches a solo founder / small business owner's voice
 
 Return ONLY JSON:
-{ "subject": "...", "body": "..." }`;
+{ "subject": "...", "body": "..." }`,
+    `Contact: ${contactName}${contactCompany ? ` at ${contactCompany}` : ''}\nDeal stage: ${dealStage}\nRecent context:\n${recentContext}`,
+    500,
+    0.7,
+  );
 
-  const msg = await anthropic.messages.create({
-    model: SONNET,
-    max_tokens: 500,
-    temperature: 0.7,
-    system: prompt,
-    messages: [{
-      role: 'user',
-      content: `Contact: ${contactName}${contactCompany ? ` at ${contactCompany}` : ''}\nDeal stage: ${dealStage}\nRecent context:\n${recentContext}`,
-    }],
-  });
-
-  const text = (msg.content[0] as { text: string }).text;
   return JSON.parse(text);
 }
 
-// ─── Query Engine: natural language → SQL ────────────
+// ─── Query Engine: natural language → answer ──────────
 
 export async function answerQuery(
   question: string,
   schemaContext: string,
 ): Promise<string> {
-  const prompt = `You are a CRM query assistant. Given a user's question and their CRM data context, provide a clear, concise answer in natural language. Be conversational and helpful. If you cannot answer from the context, say so.
+  const text = await claude(
+    SONNET,
+    `You are a CRM query assistant. Given a user's question and their CRM data context, provide a clear, concise answer in natural language. Be conversational and helpful. If you cannot answer from the context, say so. Keep it under 3 sentences.`,
+    `Question: ${question}\n\nCRM Data:\n${schemaContext}`,
+    300,
+    0,
+  );
 
-User's CRM data context:
-${schemaContext}
-
-Respond in plain English, max 3-4 sentences. Be specific with names and numbers.`;
-
-  const msg = await anthropic.messages.create({
-    model: SONNET,
-    max_tokens: 400,
-    temperature: 0.3,
-    system: prompt,
-    messages: [{ role: 'user', content: question }],
-  });
-
-  return (msg.content[0] as { text: string }).text;
+  return text;
 }
 
-// ─── Summary: build context for query engine ──────────
+// ─── Context Builder ──────────────────────────────────
+
+import { getServiceClient } from '@/lib/supabase/client';
 
 export async function buildQueryContext(userId: string): Promise<string> {
-  // This would query Supabase - simplified for now
-  return `(CRM data would be injected here from Supabase based on user ${userId})`;
+  const supabase = getServiceClient();
+  const { data: contacts } = await supabase.from('contacts').select('name, email, company, last_contacted_at').eq('user_id', userId);
+  const { data: deals } = await supabase.from('deals').select('title, stage, amount').eq('user_id', userId);
+  const { data: followups } = await supabase.from('followup_reminders').select('reason, is_dismissed').eq('user_id', userId).eq('is_dismissed', false);
+
+  const parts: string[] = [];
+  if (contacts?.length) parts.push(`Contacts (${contacts.length}): ${JSON.stringify(contacts.slice(0, 20))}`);
+  if (deals?.length) parts.push(`Deals (${deals.length}): ${JSON.stringify(deals.slice(0, 20))}`);
+  if (followups?.length) parts.push(`Pending follow-ups: ${followups.length}`);
+  return parts.join('\n') || 'No CRM data yet.';
 }
