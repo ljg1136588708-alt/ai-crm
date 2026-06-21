@@ -20,7 +20,8 @@ const RATIOS = ['智能', '1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21
 const FORMATS = ['PNG', 'JPG', 'WebP'];
 
 type GenerationResult = {
-  image: string;
+  image: string;       // base64 data URL (for current result display)
+  imageUrl?: string;   // Supabase public URL (persisted in history)
   prompt: string;
   timestamp: number;
 };
@@ -55,9 +56,20 @@ export default function GeneratePage() {
   }, []);
 
   const saveToHistory = (item: GenerationResult) => {
-    const updated = [item, ...history].slice(0, 50);
+    // Don't save base64 image to localStorage (too large).
+    // Store URL and prompt only.
+    const slim = {
+      image: item.imageUrl || '',  // use Supabase URL for thumbnail
+      prompt: item.prompt,
+      timestamp: item.timestamp,
+    };
+    const updated = [slim as GenerationResult, ...history].slice(0, 50);
     setHistory(updated);
-    localStorage.setItem('generation-history', JSON.stringify(updated));
+    try {
+      localStorage.setItem('generation-history', JSON.stringify(updated));
+    } catch {
+      // localStorage full — oldest items will be dropped on next save
+    }
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
