@@ -26,12 +26,6 @@ const DEMO_DEALS = [
   { contactIdx: 6, title: 'Workspace Expansion Deal', stage: 'lead', amount: 45000, confidence: 2 },
 ];
 
-const DEMO_FOLLOWUPS = [
-  { contactIdx: 1, reason: 'Send integration pricing proposal' },
-  { contactIdx: 3, reason: 'Follow up on migration timeline' },
-  { contactIdx: 5, reason: 'Share AI licensing terms' },
-];
-
 export async function POST() {
   const { userId: clerkId } = await auth();
   if (!clerkId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -83,25 +77,11 @@ export async function POST() {
     });
   }
 
-  // Insert followups
-  for (const f of DEMO_FOLLOWUPS) {
-    const contact = contacts[f.contactIdx];
-    if (!contact) continue;
-    await supabase.from('followup_reminders').insert({
-      user_id: user.id,
-      contact_id: contact.id,
-      reason: f.reason,
-      is_dismissed: false,
-      is_sent: false,
-    });
-  }
-
   return NextResponse.json({
     success: true,
     stats: {
       contacts: contacts.length,
       deals: DEMO_DEALS.length,
-      followups: DEMO_FOLLOWUPS.length,
     },
   });
 }

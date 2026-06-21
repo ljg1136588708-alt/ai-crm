@@ -36,7 +36,11 @@ export default async function FollowupsPage() {
           </div>
           <h1 className="text-2xl font-bold">Follow-ups</h1>
           <p className="text-zinc-500 text-sm mt-1">
-            {activeFollowups.length} reminder{activeFollowups.length !== 1 ? 's' : ''} — AI drafted emails for each
+            {activeFollowups.length} reminder{activeFollowups.length !== 1 ? 's' : ''}
+            {(() => {
+              const withDrafts = activeFollowups.filter((f: any) => f.draft_email_body).length;
+              return withDrafts > 0 ? ` — ${withDrafts} with AI drafts` : '';
+            })()}
           </p>
         </div>
         <div className="flex items-center gap-2">
