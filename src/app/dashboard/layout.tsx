@@ -1,6 +1,7 @@
 import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { BarChart3, Users, Bell, Settings } from 'lucide-react';
+import { QueryPanel } from '@/components/query-panel';
 
 const nav = [
   { href: '/dashboard', label: 'Pipeline', icon: BarChart3 },
@@ -34,6 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
       <main className="flex-1 overflow-auto">
         {children}
+        <QueryPanel />
       </main>
     </div>
   );
