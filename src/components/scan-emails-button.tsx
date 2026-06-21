@@ -2,11 +2,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ScanLine, Loader2, Database, Sparkles } from 'lucide-react';
+import { useT } from '@/components/locale-provider';
+import { ScanLine, Loader2, Sparkles } from 'lucide-react';
 
 export function ScanEmailsButton() {
   const [scanning, setScanning] = useState(false);
   const router = useRouter();
+  const t = useT();
 
   const handleScan = async () => {
     setScanning(true);
@@ -32,7 +34,7 @@ export function ScanEmailsButton() {
       ) : (
         <ScanLine className="w-3 h-3 mr-1" />
       )}
-      {scanning ? 'Scanning…' : 'Scan Emails'}
+      {scanning ? t.dashboard.scanning : t.dashboard.scanEmails}
     </Button>
   );
 }
@@ -40,6 +42,7 @@ export function ScanEmailsButton() {
 export function SeedDemoButton() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const t = useT();
 
   const handleSeed = async () => {
     setLoading(true);
@@ -65,7 +68,7 @@ export function SeedDemoButton() {
       ) : (
         <Sparkles className="w-4 h-4 mr-2" />
       )}
-      {loading ? 'Loading…' : 'Load Demo Data'}
+      {loading ? t.common.loading : t.dashboard.loadDemo}
     </Button>
   );
 }

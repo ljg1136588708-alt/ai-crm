@@ -1,12 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { type Locale, switchLocale, detectLocale } from '@/lib/i18n';
+import { useLocale } from '@/components/locale-provider';
+import { switchLocale } from '@/lib/i18n';
 
 export function LocaleSwitcher() {
-  const [locale, setLocale] = useState<Locale>('en');
-
-  useEffect(() => { setLocale(detectLocale()); }, []);
-
+  const locale = useLocale();
   return (
     <button
       onClick={() => switchLocale(locale === 'en' ? 'zh' : 'en')}

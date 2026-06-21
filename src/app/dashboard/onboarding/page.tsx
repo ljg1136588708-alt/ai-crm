@@ -3,14 +3,14 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Mail, Check, CheckCircle2 } from 'lucide-react';
+import { getServerT } from '@/lib/i18n-server';
+import { Mail, Check } from 'lucide-react';
 
 export default async function OnboardingPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  // Check if Gmail already connected
-  const { getServiceClient } = await import('@/lib/supabase/client');
+  const [t, { getServiceClient }] = [await getServerT(), await import('@/lib/supabase/client')];
   const supabase = getServiceClient();
   const { data: user } = await supabase
     .from('users')
@@ -28,23 +28,20 @@ export default async function OnboardingPage() {
         <div className="w-16 h-16 rounded-2xl bg-violet-100 flex items-center justify-center mx-auto mb-6">
           <Mail className="w-8 h-8 text-violet-600" />
         </div>
-        <h1 className="text-xl font-bold mb-2">Connect your Gmail</h1>
-        <p className="text-zinc-500 mb-8">
-          AI scans your emails, extracts contacts and deals, and builds your pipeline automatically.
-          No data entry required.
-        </p>
+        <h1 className="text-xl font-bold mb-2">{t.onboarding.title}</h1>
+        <p className="text-zinc-500 mb-8">{t.onboarding.desc}</p>
         <div className="bg-zinc-50 rounded-lg p-4 text-sm text-zinc-600 space-y-2 mb-6 text-left">
           <p className="flex items-center gap-2">
             <Check size={14} className="text-emerald-500 shrink-0" />
-            Only business emails are scanned — newsletters and notifications are skipped
+            {t.onboarding.privacy1}
           </p>
           <p className="flex items-center gap-2">
             <Check size={14} className="text-emerald-500 shrink-0" />
-            Email bodies are never stored — only metadata is saved
+            {t.onboarding.privacy2}
           </p>
           <p className="flex items-center gap-2">
             <Check size={14} className="text-emerald-500 shrink-0" />
-            Revoke access anytime from your Google Account settings
+            {t.onboarding.privacy3}
           </p>
         </div>
         <a
@@ -52,10 +49,10 @@ export default async function OnboardingPage() {
           className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white font-medium px-6 py-2.5 hover:bg-violet-700 transition-colors"
         >
           <Mail className="w-4 h-4 mr-2" />
-          Connect Gmail
+          {t.onboarding.connectGmail}
         </a>
         <Link href="/dashboard" className="block mt-4">
-          <Button variant="outline" size="sm">Back to Dashboard</Button>
+          <Button variant="outline" size="sm">{t.onboarding.backToDashboard}</Button>
         </Link>
       </Card>
     </div>

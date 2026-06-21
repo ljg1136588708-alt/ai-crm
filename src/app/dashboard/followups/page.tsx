@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getServiceClient } from '@/lib/supabase/client';
 import { getFollowups } from '@/lib/supabase/queries';
+import { getServerT } from '@/lib/i18n-server';
 import { ArrowLeft, Mail, Clock, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { GenerateFollowupsButton } from '@/components/followup-button';
 import { DismissFollowupButton } from '@/components/dismiss-followup-button';
@@ -13,7 +14,8 @@ export default async function FollowupsPage() {
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  const supabase = getServiceClient();
+  const [t, supabase] = [await getServerT(), getServiceClient()];
+
   const { data: user } = await supabase
     .from('users')
     .select('id')
@@ -24,6 +26,7 @@ export default async function FollowupsPage() {
 
   const followups = await getFollowups(user.id);
   const activeFollowups = followups.filter((f: any) => !f.is_dismissed);
+  const withDrafts = activeFollowups.filter((f: any) => f.draft_email_body).length;
 
   return (
     <div className="p-8 max-w-7xl">
@@ -31,16 +34,13 @@ export default async function FollowupsPage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Link href="/dashboard" className="text-sm text-zinc-400 hover:text-zinc-600 transition-colors">
-              ← Pipeline
+              {t.common.backToPipeline}
             </Link>
           </div>
-          <h1 className="text-2xl font-bold">Follow-ups</h1>
+          <h1 className="text-2xl font-bold">{t.followups.title}</h1>
           <p className="text-zinc-500 text-sm mt-1">
-            {activeFollowups.length} reminder{activeFollowups.length !== 1 ? 's' : ''}
-            {(() => {
-              const withDrafts = activeFollowups.filter((f: any) => f.draft_email_body).length;
-              return withDrafts > 0 ? ` — ${withDrafts} with AI drafts` : '';
-            })()}
+            {activeFollowups.length} {activeFollowups.length !== 1 ? t.followups.reminders : t.followups.reminder}
+            {withDrafts > 0 && ` — ${withDrafts} ${t.followups.withAiDrafts}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -53,10 +53,8 @@ export default async function FollowupsPage() {
           <div className="w-16 h-16 rounded-2xl bg-amber-100 flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8 text-amber-600" />
           </div>
-          <h2 className="text-lg font-semibold mb-2">All caught up!</h2>
-          <p className="text-zinc-500 text-sm mb-4">
-            No follow-up reminders right now. Click "Generate" to let AI scan for contacts needing attention.
-          </p>
+          <h2 className="text-lg font-semibold mb-2">{t.followups.allCaughtUp}</h2>
+          <p className="text-zinc-500 text-sm mb-4">{t.followups.allCaughtUpDesc}</p>
           <GenerateFollowupsButton />
         </Card>
       ) : (
@@ -71,7 +69,7 @@ export default async function FollowupsPage() {
                     </div>
                     <div>
                       <h3 className="font-medium text-sm">
-                        {f.contactName || f.contactEmail || 'Unknown'}
+                        {f.contactName || f.contactEmail || t.followups.unknown}
                       </h3>
                       {f.contactCompany && (
                         <p className="text-xs text-zinc-500">{f.contactCompany}</p>
@@ -92,7 +90,7 @@ export default async function FollowupsPage() {
                   {f.draft_email_body && (
                     <details className="bg-zinc-50 rounded-lg border cursor-pointer">
                       <summary className="p-3 text-xs font-medium text-zinc-600 hover:text-zinc-800 select-none">
-                        {f.draft_email_subject || 'AI Draft'} — click to expand
+                        {f.draft_email_subject || t.followups.draftSubject} — {t.followups.clickToExpand}
                       </summary>
                       <div className="px-4 pb-4">
                         <p className="text-sm text-zinc-600 whitespace-pre-line leading-relaxed">
@@ -122,7 +120,7 @@ export default async function FollowupsPage() {
                       className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-800 font-medium transition-colors"
                     >
                       <Mail size={12} />
-                      Open in Gmail
+                      {t.followups.openInGmail}
                     </a>
                   )}
                   <DismissFollowupButton followupId={f.id} />

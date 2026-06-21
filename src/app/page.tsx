@@ -1,7 +1,6 @@
 'use client';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getT, detectLocale, type Locale } from '@/lib/i18n';
+import { useT } from '@/components/locale-provider';
 
 function Button({ children, variant, size, className, href, ...props }: any) {
   const base = "inline-flex items-center justify-center rounded-lg font-medium transition-colors";
@@ -16,17 +15,7 @@ function Button({ children, variant, size, className, href, ...props }: any) {
 }
 
 export default function LandingPage() {
-  const [t, setT] = useState(() => getT('en'));
-
-  useEffect(() => {
-    const locale = detectLocale();
-    setT(getT(locale));
-    
-    // Listen for locale changes (page reload)
-    const handler = () => setT(getT(detectLocale()));
-    window.addEventListener('localechange', handler);
-    return () => window.removeEventListener('localechange', handler);
-  }, []);
+  const t = useT();
 
   return (
     <main className="min-h-screen">

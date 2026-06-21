@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { ClerkProvider } from '@clerk/nextjs';
+import { LocaleProvider } from '@/components/locale-provider';
 import { LocaleSwitcher } from '@/components/locale-switcher';
+import { type Locale } from '@/lib/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -8,7 +11,10 @@ export const metadata: Metadata = {
   description: 'Connect your Gmail, and your pipeline builds automatically.',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const cookieStore = await cookies();
+  const locale = (cookieStore.get('locale')?.value ?? 'en') as Locale;
+
   return (
     <ClerkProvider
       signInUrl="/sign-in"
@@ -17,10 +23,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       signInFallbackRedirectUrl="/dashboard"
       signUpFallbackRedirectUrl="/dashboard/onboarding"
     >
-      <html lang="en" className="antialiased">
+      <html lang={locale} className="antialiased">
         <body className="min-h-screen bg-white text-zinc-900">
-          {children}
-          <LocaleSwitcher />
+          <LocaleProvider locale={locale}>
+            {children}
+            <LocaleSwitcher />
+          </LocaleProvider>
         </body>
       </html>
     </ClerkProvider>

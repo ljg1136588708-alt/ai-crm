@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useT } from '@/components/locale-provider';
 import { Sparkles, X, Loader2, MessageCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 
@@ -17,6 +18,7 @@ export function QueryPanel() {
   const [messages, setMessages] = useState<Message[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const t = useT();
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
@@ -40,10 +42,10 @@ export function QueryPanel() {
         body: JSON.stringify({ query: q }),
       });
       const data = await res.json();
-      const answer = data?.data?.answer || data?.error || 'Sorry, something went wrong.';
+      const answer = data?.data?.answer || data?.error || t.query.error;
       setMessages(prev => [...prev, { role: 'ai', text: answer }]);
     } catch {
-      setMessages(prev => [...prev, { role: 'ai', text: 'Network error — please try again.' }]);
+      setMessages(prev => [...prev, { role: 'ai', text: t.query.networkError }]);
     } finally {
       setLoading(false);
     }
@@ -51,7 +53,6 @@ export function QueryPanel() {
 
   return (
     <>
-      {/* Floating button */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
@@ -61,32 +62,24 @@ export function QueryPanel() {
         </button>
       )}
 
-      {/* Panel */}
       {open && (
         <Card className="fixed bottom-6 right-6 w-96 h-[500px] shadow-2xl flex flex-col z-50 border-violet-200">
-          {/* Header */}
           <div className="flex items-center justify-between p-4 border-b shrink-0">
             <div className="flex items-center gap-2">
               <Sparkles size={16} className="text-violet-600" />
-              <span className="font-semibold text-sm">Ask AI about your CRM</span>
+              <span className="font-semibold text-sm">{t.query.askAI}</span>
             </div>
             <button onClick={() => setOpen(false)} className="text-zinc-400 hover:text-zinc-600">
               <X size={16} />
             </button>
           </div>
 
-          {/* Messages */}
           <div ref={listRef} className="flex-1 overflow-y-auto p-4 space-y-3">
             {messages.length === 0 && (
               <div className="text-center text-zinc-400 text-sm py-8">
-                <p className="mb-2">Try asking:</p>
+                <p className="mb-2">{t.query.tryAsking}</p>
                 <div className="space-y-1">
-                  {[
-                    'Who needs follow-up?',
-                    'Show my pipeline summary',
-                    'Which deals are stuck?',
-                    'Who has the highest deal value?',
-                  ].map((q) => (
+                  {t.query.suggestions.map((q) => (
                     <button
                       key={q}
                       onClick={() => { setInput(q); inputRef.current?.focus(); }}
@@ -112,23 +105,22 @@ export function QueryPanel() {
             {loading && (
               <div className="flex items-center gap-2 text-zinc-400 text-sm">
                 <Loader2 size={14} className="animate-spin" />
-                Thinking...
+                {t.query.thinking}
               </div>
             )}
           </div>
 
-          {/* Input */}
           <div className="p-4 border-t shrink-0 flex gap-2">
             <Input
               ref={inputRef}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && send()}
-              placeholder="Ask anything..."
+              placeholder={t.query.placeholder}
               className="flex-1"
             />
             <Button onClick={send} disabled={loading || !input.trim()} size="sm">
-              Send
+              {t.query.send}
             </Button>
           </div>
         </Card>

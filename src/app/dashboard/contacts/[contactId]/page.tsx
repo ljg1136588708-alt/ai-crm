@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getServiceClient } from '@/lib/supabase/client';
 import { getContact, getDeals, getEmailsForContact, getFollowups } from '@/lib/supabase/queries';
+import { getServerT } from '@/lib/i18n-server';
 import { ArrowLeft, Mail, Building2, Briefcase, CircleDollarSign, Clock, Calendar } from 'lucide-react';
 import type { DealStage } from '@/types';
 
@@ -16,14 +17,6 @@ const STAGE_COLORS: Record<DealStage, string> = {
   lost: 'bg-zinc-50 text-zinc-400 border-zinc-200',
 };
 
-const STAGE_LABELS: Record<DealStage, string> = {
-  lead: 'Lead',
-  contacted: 'Contacted',
-  negotiation: 'Negotiation',
-  won: 'Won',
-  lost: 'Lost',
-};
-
 export default async function ContactDetailPage({
   params,
 }: {
@@ -32,7 +25,8 @@ export default async function ContactDetailPage({
   const { userId } = await auth();
   if (!userId) redirect('/sign-in');
 
-  const supabase = getServiceClient();
+  const [t, supabase] = [await getServerT(), getServiceClient()];
+
   const { data: user } = await supabase
     .from('users')
     .select('id')
@@ -59,10 +53,9 @@ export default async function ContactDetailPage({
     <div className="p-8 max-w-7xl">
       <Link href="/dashboard/contacts" className="inline-flex items-center gap-1 text-sm text-zinc-400 hover:text-zinc-600 mb-6 transition-colors">
         <ArrowLeft size={14} />
-        Back to Contacts
+        {t.contactDetail.back}
       </Link>
 
-      {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-4">
           <div className="w-14 h-14 rounded-full bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center text-white font-bold text-xl shrink-0">
@@ -90,7 +83,7 @@ export default async function ContactDetailPage({
             {contact.last_contacted_at && (
               <p className="text-xs text-zinc-400 mt-2 flex items-center gap-1">
                 <Clock size={11} />
-                Last contact: {new Date(contact.last_contacted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                {t.contactDetail.lastContact} {new Date(contact.last_contacted_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </p>
             )}
           </div>
@@ -98,14 +91,13 @@ export default async function ContactDetailPage({
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left: Deals */}
         <div className="lg:col-span-2">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-            Deals ({contactDeals.length})
+            {t.contactDetail.deals} ({contactDeals.length})
           </h2>
           {contactDeals.length === 0 ? (
             <Card className="p-8 text-center border-dashed">
-              <p className="text-zinc-400 text-sm">No deals associated with this contact.</p>
+              <p className="text-zinc-400 text-sm">{t.contactDetail.noDeals}</p>
             </Card>
           ) : (
             <div className="grid gap-3">
@@ -116,7 +108,7 @@ export default async function ContactDetailPage({
                       <h3 className="font-medium">{deal.title}</h3>
                       <div className="flex items-center gap-3 mt-1">
                         <Badge variant="outline" className={`text-xs border ${STAGE_COLORS[deal.stage as DealStage]}`}>
-                          {STAGE_LABELS[deal.stage as DealStage]}
+                          {t.dashboard.stages[deal.stage as DealStage]}
                         </Badge>
                         {deal.amount && (
                           <span className="text-sm text-zinc-500 flex items-center gap-1">
@@ -144,11 +136,10 @@ export default async function ContactDetailPage({
             </div>
           )}
 
-          {/* Follow-ups */}
           {contactFollowups.length > 0 && (
             <>
               <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3 mt-6">
-                Follow-ups Needed
+                {t.contactDetail.followupsNeeded}
               </h2>
               <div className="space-y-2">
                 {contactFollowups.map((f: any) => (
@@ -156,7 +147,7 @@ export default async function ContactDetailPage({
                     <p className="text-sm text-amber-800">{f.reason}</p>
                     {f.draft_email_subject && (
                       <p className="text-xs text-amber-600 mt-1">
-                        Draft: {f.draft_email_subject}
+                        {t.contactDetail.draft} {f.draft_email_subject}
                       </p>
                     )}
                   </Card>
@@ -166,24 +157,23 @@ export default async function ContactDetailPage({
           )}
         </div>
 
-        {/* Right: Email Timeline */}
         <div>
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wider mb-3">
-            Email History ({emails.length})
+            {t.contactDetail.emailHistory} ({emails.length})
           </h2>
           {emails.length === 0 ? (
             <Card className="p-8 text-center border-dashed">
-              <p className="text-zinc-400 text-sm">No email history.</p>
+              <p className="text-zinc-400 text-sm">{t.contactDetail.noEmailHistory}</p>
             </Card>
           ) : (
             <div className="space-y-3">
               {emails.map((email: any) => (
                 <Card key={email.id} className="p-3">
-                  <p className="text-xs font-medium truncate">{email.subject || '(no subject)'}</p>
+                  <p className="text-xs font-medium truncate">{email.subject || t.contactDetail.noSubject}</p>
                   <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{email.snippet}</p>
                   <div className="flex items-center justify-between mt-2">
                     <Badge variant="outline" className={`text-[10px] ${email.direction === 'inbound' ? 'text-blue-600' : 'text-emerald-600'}`}>
-                      {email.direction === 'inbound' ? 'Received' : 'Sent'}
+                      {email.direction === 'inbound' ? t.contactDetail.received : t.contactDetail.sent}
                     </Badge>
                     {email.sent_at && (
                       <span className="text-[10px] text-zinc-400 flex items-center gap-0.5">

@@ -2,15 +2,18 @@ import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { BarChart3, Users, Bell, Settings } from 'lucide-react';
 import { QueryPanel } from '@/components/query-panel';
+import { getServerT } from '@/lib/i18n-server';
 
-const nav = [
-  { href: '/dashboard', label: 'Pipeline', icon: BarChart3 },
-  { href: '/dashboard/contacts', label: 'Contacts', icon: Users },
-  { href: '/dashboard/followups', label: 'Follow-ups', icon: Bell },
-  { href: '/dashboard/settings', label: 'Settings', icon: Settings },
-];
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const t = await getServerT();
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const nav = [
+    { href: '/dashboard', label: t.dashboard.pipeline, icon: BarChart3 },
+    { href: '/dashboard/contacts', label: t.dashboard.contacts, icon: Users },
+    { href: '/dashboard/followups', label: t.dashboard.followups, icon: Bell },
+    { href: '/dashboard/settings', label: t.dashboard.settings, icon: Settings },
+  ];
+
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 border-r border-zinc-200 flex flex-col bg-zinc-50/50">

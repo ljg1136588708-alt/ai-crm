@@ -2,12 +2,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/components/locale-provider';
 import { Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 
 export function GenerateFollowupsButton() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ message?: string; generated?: number; errors?: string[] } | null>(null);
   const router = useRouter();
+  const t = useT();
 
   const handleGenerate = async () => {
     setLoading(true);
@@ -18,7 +20,7 @@ export function GenerateFollowupsButton() {
       setResult(data);
       router.refresh();
     } catch {
-      setResult({ message: 'Network error — please try again' });
+      setResult({ message: t.followups.networkError });
     } finally {
       setLoading(false);
     }
@@ -32,19 +34,19 @@ export function GenerateFollowupsButton() {
         ) : (
           <Sparkles className="w-4 h-4 mr-2" />
         )}
-        {loading ? 'Generating…' : 'Generate Reminders'}
+        {loading ? t.followups.generating : t.followups.generate}
       </Button>
       {result && (
         <div className="mt-3 p-3 rounded-lg bg-zinc-50 border text-sm">
           <p className="font-medium mb-1">{result.message}</p>
           {result.generated != null && (
-            <p className="text-zinc-500">{result.generated} reminder(s) created</p>
+            <p className="text-zinc-500">{result.generated} {t.followups.remindersCreated}</p>
           )}
           {result.errors && result.errors.length > 0 && (
             <div className="mt-2 space-y-1">
               <p className="text-amber-700 text-xs font-medium flex items-center gap-1">
                 <AlertTriangle size={12} />
-                AI draft errors ({result.errors.length}):
+                {t.followups.aiDraftErrors} ({result.errors.length}):
               </p>
               {result.errors.map((e, i) => (
                 <p key={i} className="text-xs text-red-600 break-all">{e}</p>
