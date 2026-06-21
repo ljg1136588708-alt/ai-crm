@@ -1,176 +1,261 @@
-import { auth } from '@clerk/nextjs/server';
-import { redirect } from 'next/navigation';
-import Link from 'next/link';
+'use client';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { getServiceClient } from '@/lib/supabase/client';
-import { getPipelineStats, getDeals } from '@/lib/supabase/queries';
-import { ScanEmailsButton, SeedDemoButton } from '@/components/scan-emails-button';
-import { Mail, CircleDollarSign, User, Building2 } from 'lucide-react';
-import { getServerT } from '@/lib/i18n-server';
-import type { DealStage } from '@/types';
 
-const STAGE_COLORS: Record<DealStage, string> = {
-  lead: 'bg-amber-50 text-amber-700 border-amber-200',
-  contacted: 'bg-blue-50 text-blue-700 border-blue-200',
-  negotiation: 'bg-violet-50 text-violet-700 border-violet-200',
-  won: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-  lost: 'bg-zinc-50 text-zinc-400 border-zinc-200',
+const STYLES = [
+  '写实摄影', '动漫', '水彩', '素描', '赛博朋克', '油画', '电影感',
+  '仙侠', '日漫', '复古', '科幻', 'Q版', '贴纸', '游戏CG', '手办',
+  '美漫', '废土科幻', '3D卡通', '吉卜力', '国漫2D', '国漫3D',
+];
+
+const STYLE_EMOJI: Record<string, string> = {
+  '写实摄影': '📷', '动漫': '🎨', '水彩': '🖌️', '素描': '✏️', '赛博朋克': '🤖',
+  '油画': '🖼️', '电影感': '🎬', '仙侠': '🧚', '日漫': '🌸', '复古': '📻',
+  '科幻': '🚀', 'Q版': '🍬', '贴纸': '🏷️', '游戏CG': '🎮', '手办': '🗿',
+  '美漫': '💥', '废土科幻': '🌵', '3D卡通': '🧸', '吉卜力': '🌿', '国漫2D': '📜', '国漫3D': '💎',
 };
 
-export default async function DashboardPage() {
-  const { userId } = await auth();
-  if (!userId) redirect('/sign-in');
+const RATIOS = ['智能', '1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
+const FORMATS = ['PNG', 'JPG', 'WebP'];
 
-  const [t, supabase] = [await getServerT(), getServiceClient()];
+type GenerationResult = {
+  image: string;
+  prompt: string;
+  timestamp: number;
+};
 
-  const { data: user } = await supabase
-    .from('users')
-    .select('id, gmail_connected, gmail_email')
-    .eq('clerk_id', userId)
-    .single();
+export default function GeneratePage() {
+  const [tab, setTab] = useState<'text' | 'image'>('text');
+  const [prompt, setPrompt] = useState('');
+  const [style, setStyle] = useState('');
+  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [format, setFormat] = useState('PNG');
+  const [referenceImage, setReferenceImage] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [result, setResult] = useState<GenerationResult | null>(null);
+  const [history, setHistory] = useState<GenerationResult[]>([]);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  if (!user) {
-    return (
-      <div className="p-8 max-w-7xl">
-        <h1 className="text-2xl font-bold">{t.dashboard.pipeline}</h1>
-        <p className="text-zinc-500 mt-2">{t.common.settingUp}</p>
-      </div>
-    );
-  }
+  // Load history from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('generation-history');
+      if (saved) setHistory(JSON.parse(saved));
+    } catch {}
+  }, []);
 
-  if (!user.gmail_connected) {
-    return (
-      <div className="p-8 max-w-7xl">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">{t.dashboard.pipeline}</h1>
-            <p className="text-zinc-500 text-sm mt-1">{t.dashboard.noGmailDesc}</p>
-          </div>
-        </div>
-        <Card className="p-16 text-center border-dashed">
-          <div className="text-4xl mb-4">📬</div>
-          <h2 className="text-xl font-semibold mb-2">{t.dashboard.noGmailTitle}</h2>
-          <p className="text-zinc-500 mb-6 max-w-md mx-auto">{t.dashboard.noGmailCardDesc}</p>
-          <Link href="/dashboard/onboarding">
-            <Button>
-              <Mail className="w-4 h-4 mr-2" />
-              {t.dashboard.connectGmail}
-            </Button>
-          </Link>
-        </Card>
-      </div>
-    );
-  }
+  const saveToHistory = (item: GenerationResult) => {
+    const updated = [item, ...history].slice(0, 50);
+    setHistory(updated);
+    localStorage.setItem('generation-history', JSON.stringify(updated));
+  };
 
-  const [stats, deals] = await Promise.all([
-    getPipelineStats(user.id),
-    getDeals(user.id),
-  ]);
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setReferenceImage(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
-  if (stats.totalDeals === 0) {
-    return (
-      <div className="p-8 max-w-7xl">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold">{t.dashboard.pipeline}</h1>
-            <p className="text-zinc-500 text-sm mt-1">
-              {t.dashboard.gmailConnected} {user.gmail_email}
-            </p>
-          </div>
-          <Link href="/dashboard/onboarding">
-            <Button variant="ghost" size="sm">
-              <Mail className="w-3 h-3 mr-1" />
-              {user.gmail_email}
-            </Button>
-          </Link>
-        </div>
-        <Card className="p-16 text-center border-dashed">
-          <div className="text-4xl mb-4">🤖</div>
-          <h2 className="text-xl font-semibold mb-2">{t.dashboard.readyScan}</h2>
-          <p className="text-zinc-500 mb-6 max-w-md mx-auto">{t.dashboard.readyScanDesc}</p>
-          <div className="flex items-center justify-center gap-3">
-            <ScanEmailsButton />
-            <SeedDemoButton />
-          </div>
-        </Card>
-      </div>
-    );
-  }
+  const generate = async () => {
+    if (tab === 'text' && !prompt.trim()) return;
+    if (tab === 'image' && !referenceImage) return;
 
-  const stages: DealStage[] = ['lead', 'contacted', 'negotiation', 'won', 'lost'];
+    setLoading(true);
+    setError('');
+    setResult(null);
+
+    try {
+      const res = await fetch('/api/image/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: tab === 'text' ? prompt : prompt || undefined,
+          referenceImage: tab === 'image' ? referenceImage : undefined,
+          style,
+          aspectRatio: aspectRatio === '智能' ? undefined : aspectRatio,
+          format: format.toLowerCase(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+
+      const genResult: GenerationResult = {
+        image: data.image,
+        prompt: data.prompt,
+        timestamp: Date.now(),
+      };
+      setResult(genResult);
+      saveToHistory(genResult);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const download = () => {
+    if (!result) return;
+    const a = document.createElement('a');
+    a.href = result.image;
+    a.download = `generated-${Date.now()}.${format.toLowerCase()}`;
+    a.click();
+  };
 
   return (
-    <div className="p-8 max-w-7xl">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">{t.dashboard.pipeline}</h1>
-          <p className="text-zinc-500 text-sm mt-1">
-            {stats.totalDeals} {t.dashboard.activeDeals} · ${stats.totalValue.toLocaleString()} {t.dashboard.totalValue}
-            {stats.followupCount > 0 && (
-              <span className="text-amber-600 ml-2">· {stats.followupCount} {t.dashboard.needFollowup}</span>
-            )}
-          </p>
+    <div className="max-w-3xl mx-auto px-4 py-6">
+      {/* Tabs */}
+      <div className="flex gap-1 mb-6 bg-zinc-100 rounded-lg p-1">
+        {(['text', 'image'] as const).map((m) => (
+          <button
+            key={m}
+            onClick={() => { setTab(m); setResult(null); setError(''); }}
+            className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+              tab === m ? 'bg-white text-violet-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
+            }`}
+          >
+            {m === 'text' ? '✍️ 文生图' : '📸 图生图'}
+          </button>
+        ))}
+      </div>
+
+      {/* Input area */}
+      {tab === 'image' && (
+        <div className="mb-4">
+          {referenceImage ? (
+            <div className="relative inline-block">
+              <img src={referenceImage} alt="Reference" className="w-48 h-48 object-cover rounded-lg border" />
+              <button
+                onClick={() => setReferenceImage(null)}
+                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
+              >×</button>
+            </div>
+          ) : (
+            <div
+              onClick={() => fileRef.current?.click()}
+              className="border-2 border-dashed border-zinc-300 rounded-lg p-8 text-center cursor-pointer hover:border-violet-400 transition-colors"
+            >
+              <div className="text-3xl mb-2">📁</div>
+              <p className="text-sm text-zinc-500">点击上传图片</p>
+            </div>
+          )}
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
         </div>
-        <div className="flex items-center gap-2">
-          <ScanEmailsButton />
-          <SeedDemoButton />
-          <Link href="/dashboard/contacts">
-            <Button variant="outline" size="sm">{t.dashboard.contacts}</Button>
-          </Link>
+      )}
+
+      <div className="mb-4">
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder={tab === 'text' ? '描述你想要生成的图片…' : '可选：描述你想要的风格或变化…'}
+          rows={3}
+          className="w-full border border-zinc-200 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent"
+        />
+      </div>
+
+      {/* Style selector */}
+      <div className="mb-4">
+        <p className="text-xs text-zinc-400 mb-2">风格（可选）</p>
+        <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+          {STYLES.map((s) => (
+            <button
+              key={s}
+              onClick={() => setStyle(style === s ? '' : s)}
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                style === s ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              {(STYLE_EMOJI[s] || '')} {s}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        {stages.map((stage) => {
-          const stageDeals = (deals as any[]).filter((d) => d.stage === stage);
-          return (
-            <div key={stage} className="min-h-[200px]">
-              <div className="flex items-center justify-between mb-3 px-1">
-                <span className="text-sm font-medium text-zinc-600">{t.dashboard.stages[stage]}</span>
-                <Badge variant="secondary" className="text-xs">
-                  {stats.stageCounts[stage]}
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {stageDeals.map((deal: any) => (
-                  <Link key={deal.id} href={`/dashboard/contacts/${deal.contact_id || ''}`}>
-                    <Card className="p-3 hover:shadow-md transition-shadow cursor-pointer">
-                      <h4 className="font-medium text-sm mb-1">{deal.title}</h4>
-                      {deal.amount && (
-                        <div className="flex items-center gap-1 text-xs text-zinc-500 mb-1">
-                          <CircleDollarSign size={12} />
-                          ${deal.amount.toLocaleString()}
-                        </div>
-                      )}
-                      {deal.contactName && (
-                        <div className="flex items-center gap-1 text-xs text-zinc-400">
-                          <User size={12} />
-                          {deal.contactName}
-                          {deal.contactCompany && (
-                            <span className="flex items-center gap-0.5 ml-1">
-                              <Building2 size={10} />
-                              {deal.contactCompany}
-                            </span>
-                          )}
-                        </div>
-                      )}
-                      {deal.confidence && (
-                        <div className="mt-2 flex gap-1">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <div key={i} className={`h-1 w-4 rounded-full ${i < deal.confidence ? 'bg-violet-400' : 'bg-zinc-100'}`} />
-                          ))}
-                        </div>
-                      )}
-                    </Card>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+      {/* Aspect ratio */}
+      <div className="mb-4">
+        <p className="text-xs text-zinc-400 mb-2">尺寸比例</p>
+        <div className="flex gap-1.5">
+          {RATIOS.map((r) => (
+            <button
+              key={r}
+              onClick={() => setAspectRatio(r)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                aspectRatio === r ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              {r}
+            </button>
+          ))}
+        </div>
       </div>
+
+      {/* Format */}
+      <div className="mb-6">
+        <p className="text-xs text-zinc-400 mb-2">输出格式</p>
+        <div className="flex gap-1.5">
+          {FORMATS.map((f) => (
+            <button
+              key={f}
+              onClick={() => setFormat(f)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                format === f ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Generate button */}
+      <Button
+        onClick={generate}
+        disabled={loading || (tab === 'text' && !prompt.trim()) || (tab === 'image' && !referenceImage)}
+        className="w-full py-3 text-base bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300"
+      >
+        {loading ? '⏳ 生成中…' : '🚀 生成'}
+      </Button>
+
+      {/* Error */}
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
+      {/* Result */}
+      {result && (
+        <div className="mt-6">
+          <div className="rounded-xl overflow-hidden border border-zinc-200">
+            <img src={result.image} alt="Generated" className="w-full" />
+          </div>
+          <p className="text-xs text-zinc-400 mt-2 truncate">{result.prompt}</p>
+          <Button onClick={download} className="mt-3 w-full" variant="outline">
+            💾 下载
+          </Button>
+        </div>
+      )}
+
+      {/* History */}
+      {history.length > 0 && (
+        <div className="mt-12">
+          <h2 className="text-lg font-semibold mb-4">📚 历史记录</h2>
+          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+            {history.map((item, i) => (
+              <button
+                key={i}
+                onClick={() => setResult(item)}
+                className="aspect-square rounded-lg overflow-hidden border border-zinc-200 hover:border-violet-400 transition-colors"
+              >
+                <img src={item.image} alt="" className="w-full h-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

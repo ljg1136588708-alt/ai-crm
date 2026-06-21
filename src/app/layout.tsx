@@ -7,8 +7,8 @@ import { type Locale } from '@/lib/i18n';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'AI CRM — The CRM that fills itself',
-  description: 'Connect your Gmail, and your pipeline builds automatically.',
+  title: 'AI Foto — Generate stunning images with AI',
+  description: 'Create beautiful AI-generated images from text or photos. Multiple styles, any size, instant results.',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -21,7 +21,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
       signInFallbackRedirectUrl="/dashboard"
-      signUpFallbackRedirectUrl="/dashboard/onboarding"
+      signUpFallbackRedirectUrl="/dashboard"
     >
       <html lang={locale} className="antialiased">
         <body className="min-h-screen bg-white text-zinc-900">
