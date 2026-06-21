@@ -97,99 +97,17 @@ export async function POST(req: Request) {
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
-    // For image-to-image with Gemini: use chat completions format
-    // For text-to-image: use images/generations format
-    if (referenceImage) {
-      // Use chat completions — Gemini natively supports image input
-      const messages: any[] = [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: fullPrompt || 'Transform this image into the requested style.' },
-            { type: 'image_url', image_url: { url: referenceImage } },
-          ],
-        },
-      ];
-
-      const chatResp = await fetch(`${APIYI_BASE}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: MODEL,
-          messages,
-          modalities: ['image'],
-          image_config: { image_size: size },
-        }),
-      });
-
-      const chatResult = await chatResp.json();
-      if (!chatResp.ok) {
-        throw new Error(chatResult.error?.message || `Chat API error ${chatResp.status}`);
-      }
-
-      // Extract image from chat response
-      const choice = chatResult.choices?.[0];
-      let base64: string | null = null;
-      
-      // Check for image in message content
-      if (choice?.message?.content) {
-        const content = choice.message.content;
-        if (Array.isArray(content)) {
-          const imgPart = content.find((p: any) => p.type === 'image_url');
-          if (imgPart?.image_url?.url) {
-            const imgUrl = imgPart.image_url.url;
-            if (imgUrl.startsWith('data:')) {
-              base64 = imgUrl.split(',')[1];
-            } else {
-              const imgResp = await fetch(imgUrl);
-              const blob = await imgResp.arrayBuffer();
-              base64 = Buffer.from(blob).toString('base64');
-            }
-          }
-        }
-      }
-      
-      // Fallback: check for b64_json in image_generation_call
-      if (!base64 && chatResult.output) {
-        const imgOutput = chatResult.output?.find((o: any) => o.type === 'image_generation_call');
-        base64 = imgOutput?.result;
-      }
-
-      if (!base64) {
-        // Refund: API called but no image extracted
-        await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
-        return NextResponse.json({ error: 'No image returned', debug: JSON.stringify(chatResult).slice(0, 300) }, { status: 500 });
-      }
-
-      const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
-      const dataUrl = `data:${mimeType};base64,${base64}`;
-
-      const buffer = Buffer.from(base64, 'base64');
-      const filename = `${userId}/${Date.now()}.${outputFormat}`;
-      await supabase.storage.from('generations').upload(filename, buffer, { contentType: mimeType, upsert: false });
-      const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
-
-      await supabase.from('generations').insert({
-        clerk_id: userId, image_url: urlData.publicUrl, prompt: fullPrompt,
-      });
-
-      return NextResponse.json({
-        success: true, image: dataUrl, imageUrl: urlData.publicUrl,
-        size, format: outputFormat, prompt: fullPrompt,
-        quota: { remaining: quota.remaining, total: quota.total },
-      });
-    }
-
-    // Text-to-image: use images/generations (simpler, works)
     const bodyObj: Record<string, unknown> = {
       model: MODEL,
       prompt: fullPrompt,
       n: 1,
       size,
     };
+
+    // Try passing reference image — APIYI may support it
+    if (referenceImage) {
+      bodyObj.image = referenceImage;
+    }
 
     const response = await fetch(`${APIYI_BASE}/images/generations`, {
       method: 'POST',
@@ -202,51 +120,67 @@ export async function POST(req: Request) {
 
     const result = await response.json();
     if (!response.ok) {
+      // If APIYI rejects 'image' param for image-to-image, fall back
+      if (referenceImage && result.error?.param === 'image') {
+        // Retry without image param
+        delete bodyObj.image;
+        const retryResp = await fetch(`${APIYI_BASE}/images/generations`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ...bodyObj, prompt: `${fullPrompt}\n[Style transfer from uploaded photo]` }),
+        });
+        const retryResult = await retryResp.json();
+        if (!retryResp.ok) {
+          throw new Error(retryResult.error?.message || `API error ${retryResp.status}`);
+        }
+        // Use retry result
+        return processResult(retryResult, outputFormat, userId, fullPrompt, size, quota, supabase);
+      }
       throw new Error(result.error?.message || `API error ${response.status}`);
     }
 
-    // APIYI may return b64_json or url format
-    const imageData = result.data?.[0];
-    let base64 = imageData?.b64_json;
-    if (!base64 && imageData?.url) {
-      // Fetch the image and convert to base64
-      const imageResp = await fetch(imageData.url);
-      const blob = await imageResp.arrayBuffer();
-      base64 = Buffer.from(blob).toString('base64');
-    }
-    if (!base64) {
-      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
-      return NextResponse.json({ error: 'No image returned' }, { status: 500 });
-    }
-
-    const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
-    const dataUrl = `data:${mimeType};base64,${base64}`;
-
-    // Save to Supabase Storage
-    const buffer = Buffer.from(base64, 'base64');
-    const filename = `${userId}/${Date.now()}.${outputFormat}`;
-    await supabase.storage.from('generations').upload(filename, buffer, {
-      contentType: mimeType,
-      upsert: false,
-    });
-    const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
-
-    await supabase.from('generations').insert({
-      clerk_id: userId,
-      image_url: urlData.publicUrl,
-      prompt: fullPrompt,
-    });
-
-    return NextResponse.json({
-      success: true,
-      image: dataUrl,
-      imageUrl: urlData.publicUrl,
-      size, format: outputFormat, prompt: fullPrompt,
-      quota: { remaining: quota.remaining, total: quota.total },
-    });
+    return processResult(result, outputFormat, userId, fullPrompt, size, quota, supabase);
   } catch (err: any) {
     await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
     console.error('Image generation error:', err);
     return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 });
   }
+}
+
+async function processResult(
+  result: any, outputFormat: string, userId: string,
+  fullPrompt: string, size: string, quota: any, supabase: any
+) {
+  const imageData = result.data?.[0];
+  let base64 = imageData?.b64_json;
+  if (!base64 && imageData?.url) {
+    const imageResp = await fetch(imageData.url);
+    const blob = await imageResp.arrayBuffer();
+    base64 = Buffer.from(blob).toString('base64');
+  }
+  if (!base64) {
+    await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+    return NextResponse.json({ error: 'No image returned' }, { status: 500 });
+  }
+
+  const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
+  const dataUrl = `data:${mimeType};base64,${base64}`;
+
+  const buffer = Buffer.from(base64, 'base64');
+  const filename = `${userId}/${Date.now()}.${outputFormat}`;
+  await supabase.storage.from('generations').upload(filename, buffer, { contentType: mimeType, upsert: false });
+  const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
+
+  await supabase.from('generations').insert({
+    clerk_id: userId, image_url: urlData.publicUrl, prompt: fullPrompt,
+  });
+
+  return NextResponse.json({
+    success: true, image: dataUrl, imageUrl: urlData.publicUrl,
+    size, format: outputFormat, prompt: fullPrompt,
+    quota: { remaining: quota.remaining, total: quota.total },
+  });
 }
