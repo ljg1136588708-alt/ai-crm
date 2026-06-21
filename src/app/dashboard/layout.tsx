@@ -1,3 +1,6 @@
+import { auth } from '@clerk/nextjs/server';
+import { redirect } from 'next/navigation';
+import { UserButton } from '@clerk/nextjs';
 import Link from 'next/link';
 import { BarChart3, Users, Settings } from 'lucide-react';
 
@@ -9,7 +12,10 @@ const nav = [
   { href: '/dashboard/settings', label: 'Settings', icon: Settings },
 ];
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const { userId } = await auth();
+  if (!userId) redirect('/sign-in');
+
   return (
     <div className="min-h-screen flex">
       <aside className="w-56 border-r border-zinc-200 flex flex-col bg-zinc-50/50">
@@ -28,8 +34,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
           ))}
         </nav>
-        <div className="p-4 border-t border-zinc-200 text-sm text-zinc-400">
-          Sign in to continue
+        <div className="p-4 border-t border-zinc-200">
+          <UserButton />
         </div>
       </aside>
       <main className="flex-1 overflow-auto">
