@@ -1,4 +1,4 @@
-// POST /api/image/generate — text-to-image or image-to-image via OpenAI
+// POST /api/image/generate — text-to-image or image-to-image via OpenAI Responses API
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
@@ -59,7 +59,6 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  // Lazy-load Supabase (avoids import at top level causing build issues)
   const { getServiceClient } = await import('@/lib/supabase/client');
   const supabase = getServiceClient();
 
@@ -85,16 +84,20 @@ export async function POST(req: Request) {
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
+    const tool: Record<string, unknown> = {
+      type: 'image_generation',
+      size,
+      output: 'b64_json',
+    };
+    if (referenceImage) tool.image = referenceImage;
+
     const bodyObj: Record<string, unknown> = {
       model: 'gpt-image-1.5',
-      prompt: fullPrompt,
-      n: 1,
-      size,
-      response_format: 'b64_json',
+      input: fullPrompt,
+      tools: [tool],
     };
-    if (referenceImage) bodyObj.image = referenceImage;
 
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    const response = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
@@ -109,10 +112,12 @@ export async function POST(req: Request) {
       throw new Error(result.error?.message || `OpenAI API error ${response.status}`);
     }
 
-    const base64 = result.data?.[0]?.b64_json;
+    // Extract base64 from response output
+    const imageOutput = result.output?.find((o: any) => o.type === 'image_generation_call');
+    const base64 = imageOutput?.result;
     if (!base64) {
       await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
-      return NextResponse.json({ error: 'No image returned' }, { status: 500 });
+      return NextResponse.json({ error: 'No image returned', debug: JSON.stringify(result).slice(0, 200) }, { status: 500 });
     }
 
     const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
@@ -127,7 +132,6 @@ export async function POST(req: Request) {
     });
     const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
 
-    // Save to history
     await supabase.from('generations').insert({
       clerk_id: userId,
       image_url: urlData.publicUrl,
