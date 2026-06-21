@@ -90,16 +90,16 @@ export default async function FollowupsPage() {
                   </div>
 
                   {f.draft_email_body && (
-                    <div className="bg-zinc-50 rounded-lg p-4 border">
-                      {f.draft_email_subject && (
-                        <p className="text-xs font-semibold text-zinc-500 mb-2">
-                          Subject: {f.draft_email_subject}
+                    <details className="bg-zinc-50 rounded-lg border cursor-pointer">
+                      <summary className="p-3 text-xs font-medium text-zinc-600 hover:text-zinc-800 select-none">
+                        {f.draft_email_subject || 'AI Draft'} — click to expand
+                      </summary>
+                      <div className="px-4 pb-4">
+                        <p className="text-sm text-zinc-600 whitespace-pre-line leading-relaxed">
+                          {f.draft_email_body}
                         </p>
-                      )}
-                      <p className="text-sm text-zinc-600 whitespace-pre-line leading-relaxed">
-                        {f.draft_email_body}
-                      </p>
-                    </div>
+                      </div>
+                    </details>
                   )}
                 </div>
               </div>

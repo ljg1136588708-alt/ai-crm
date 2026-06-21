@@ -126,6 +126,7 @@ Write a follow-up email that:
 - Has a clear next step or call to action
 - Sounds human, not like corporate marketing
 - Matches a solo founder / small business owner's voice
+- Do NOT include a signature — just the message body
 
 Return ONLY JSON:
 { "subject": "...", "body": "..." }`,
