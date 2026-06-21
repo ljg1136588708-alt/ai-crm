@@ -51,7 +51,11 @@ export default function GeneratePage() {
   useEffect(() => {
     try {
       const saved = localStorage.getItem('generation-history');
-      if (saved) setHistory(JSON.parse(saved));
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Filter out entries with no valid image URL
+        setHistory(parsed.filter((item: GenerationResult) => item.image && item.image.length > 50));
+      }
     } catch {}
   }, []);
 
@@ -291,7 +295,9 @@ export default function GeneratePage() {
                 onClick={() => setResult(item)}
                 className="aspect-square rounded-lg overflow-hidden border border-zinc-200 hover:border-violet-400 transition-colors"
               >
-                <img src={item.image} alt="" className="w-full h-full object-cover" />
+                <img src={item.image} alt="" className="w-full h-full object-cover"
+                  onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                />
               </button>
             ))}
           </div>
