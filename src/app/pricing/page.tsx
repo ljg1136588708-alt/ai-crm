@@ -131,7 +131,7 @@ export default function PricingPage() {
                 </Link>
               ) : (
                 <button
-                  className={`block w-full py-3 text-base rounded-lg text-center font-medium text-white transition-colors ${
+                  className={`block w-full py-3 text-base rounded-lg text-center font-medium text-white transition-colors cursor-pointer ${
                     loading !== null ? 'bg-violet-400 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'
                   }`}
                   onClick={() => handleSubscribe(plan.key)}
