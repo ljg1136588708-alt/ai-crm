@@ -155,7 +155,7 @@ export default function GeneratePage() {
     if (!result) return;
     const a = document.createElement('a');
     a.href = result.image;
-    a.download = `generated-${Date.now()}.${format.toLowerCase()}`;
+    a.download = `generated-${Date.now()}.png`;
     a.click();
   };
 
