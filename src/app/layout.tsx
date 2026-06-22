@@ -14,11 +14,9 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = await cookies();
   const locale = (cookieStore.get('locale')?.value ?? 'en') as Locale;
-  const clerkLocale = locale === 'zh' ? 'zh-CN' : 'en';
 
   return (
     <ClerkProvider
-      localization={{ locale: clerkLocale }}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
