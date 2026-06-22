@@ -48,6 +48,13 @@ export default function LandingPage() {
           )}
         </div>
       </section>
+
+      <footer className="max-w-2xl mx-auto text-center px-6 pb-12 text-sm text-zinc-400">
+        {t.contact}:{' '}
+        <a href="mailto:ljg1136588708@gmail.com" className="text-violet-600 hover:underline">
+          ljg1136588708@gmail.com
+        </a>
+      </footer>
     </main>
   );
 }

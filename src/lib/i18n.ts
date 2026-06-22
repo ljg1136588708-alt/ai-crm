@@ -7,6 +7,7 @@ const en = {
       heroTitle: 'One Photo. Infinite Styles.',
       heroDesc: 'Upload a photo or type a prompt — AI instantly creates your artwork. 20+ styles: anime, oil painting, cyberpunk, and more. No design skills needed. Start free.',
       tryFree: 'Try Free — No Credit Card',
+      contact: 'Contact',
     },
     dashboard: {
       textToImage: '✍️ Text to Image',
@@ -108,6 +109,7 @@ const zh: typeof en = {
       heroTitle: '一张照片，万千风格',
       heroDesc: '上传照片或描述你想要的画面，AI 即刻帮你生成专属作品。动漫、写实、油画、赛博朋克… 20+ 风格随心切换，零门槛，免费开始。',
       tryFree: '免费试用 — 无需绑卡',
+      contact: '联系我们',
     },
     dashboard: {
       textToImage: '✍️ 文生图',
