@@ -7,7 +7,7 @@ export default function LandingPage() {
   const t = useT().aifoto.landing;
   const { isLoaded, isSignedIn } = useUser();
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen flex flex-col">
       <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
         <span className="text-xl font-bold tracking-tight">AI Foto</span>
         <div className="flex items-center gap-4">
@@ -49,7 +49,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <footer className="max-w-2xl mx-auto text-center px-6 pb-12 text-sm text-zinc-400">
+      <footer className="mt-auto max-w-2xl mx-auto text-center px-6 py-8 text-sm text-zinc-400">
         {t.contact}:{' '}
         <a href="mailto:ljg1136588708@gmail.com" className="text-violet-600 hover:underline">
           ljg1136588708@gmail.com
