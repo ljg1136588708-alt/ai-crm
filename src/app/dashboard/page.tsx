@@ -99,7 +99,7 @@ export default function GeneratePage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setError('Image too large. Please use an image under 10MB.');
+      setError(t.imageTooLarge);
       return;
     }
     const reader = new FileReader();
@@ -133,7 +133,7 @@ export default function GeneratePage() {
           setQuota({ remaining: 0, total: data.quota ?? 5, isPro: false });
           throw new Error(t.quotaUsed);
         }
-        throw new Error(data.error || 'Failed');
+        throw new Error(data.error || t.genFailed);
       }
 
       const genResult: GenerationResult = {
@@ -270,7 +270,7 @@ export default function GeneratePage() {
                 style === s ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
-              {(STYLE_EMOJI[s] || '')} {s}
+              {(STYLE_EMOJI[s] || '')} {t.styleNames[s] || s}
             </button>
           ))}
         </div>
@@ -288,7 +288,7 @@ export default function GeneratePage() {
                 aspectRatio === r ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
-              {r}
+              {r === '智能' ? t.autoRatio : r}
             </button>
           ))}
         </div>
@@ -318,7 +318,7 @@ export default function GeneratePage() {
           </div>
           <p className="text-xs text-zinc-400 mt-2 truncate">{result.prompt}</p>
           <Button onClick={download} className="mt-3 w-full" variant="outline">
-            💾 {t.download}
+            {t.download}
           </Button>
         </div>
       )}

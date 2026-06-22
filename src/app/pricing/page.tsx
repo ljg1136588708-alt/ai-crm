@@ -17,11 +17,11 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(data.error || 'Checkout failed');
+        alert(data.error || t.checkoutFailed);
         setLoading(false);
       }
     } catch {
-      alert('Network error. Please try again.');
+      alert(t.networkError);
       setLoading(false);
     }
   };
@@ -31,7 +31,7 @@ export default function PricingPage() {
       <header className="border-b border-zinc-200 bg-white">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="text-lg font-bold tracking-tight">AI Foto</Link>
-          <Link href="/sign-in" className="text-sm text-zinc-600 hover:text-zinc-900">Sign In</Link>
+          <Link href="/sign-in" className="text-sm text-zinc-600 hover:text-zinc-900">{t.signIn}</Link>
         </div>
       </header>
 

@@ -37,40 +37,25 @@ const SIZES: Record<string, string> = {
 
 const FREE_QUOTA = 50;
 
-async function getOrCreateUser(supabase: any, clerkId: string) {
-  const { data: existing } = await supabase.from('users').select('*').eq('clerk_id', clerkId).single();
-  if (existing) {
-    // Pro users have unlimited — nothing to reset
-    if (existing.is_pro) return existing;
-    // Reset quota for existing free users during testing phase
-    if (existing.quota_remaining <= 0) {
-      await supabase.from('users').update({
-        quota_remaining: FREE_QUOTA,
-        quota_total: FREE_QUOTA,
-      }).eq('clerk_id', clerkId);
-      return { ...existing, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA };
-    }
-    return existing;
-  }
-  const { data: created } = await supabase.from('users').insert({
-    clerk_id: clerkId,
-    quota_remaining: FREE_QUOTA,
-    quota_total: FREE_QUOTA,
-  }).select().single();
-  return created;
+// Create the user row on first use. Idempotent: won't overwrite an existing row's quota.
+async function ensureUser(supabase: any, clerkId: string) {
+  await supabase.from('users').upsert(
+    { clerk_id: clerkId, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA },
+    { onConflict: 'clerk_id', ignoreDuplicates: true },
+  );
 }
 
+// Atomically check + deduct one credit via DB function (race-safe row lock).
 async function checkQuota(supabase: any, clerkId: string) {
-  const { data: user } = await supabase.from('users').select('quota_remaining, is_pro').eq('clerk_id', clerkId).single();
-  if (!user) return { allowed: false, remaining: 0, isPro: false };
-  // Pro users: unlimited, don't deduct
-  if (user.is_pro) return { allowed: true, remaining: -1, total: -1, isPro: true };
-  if (user.quota_remaining <= 0) return { allowed: false, remaining: user.quota_remaining, isPro: false };
-  const { data: updated } = await supabase.from('users')
-    .update({ quota_remaining: user.quota_remaining - 1 })
-    .eq('clerk_id', clerkId)
-    .select('quota_remaining, quota_total').single();
-  return { allowed: true, remaining: updated?.quota_remaining ?? 0, total: updated?.quota_total ?? FREE_QUOTA, isPro: false };
+  const { data } = await supabase.rpc('decrement_quota', { p_clerk_id: clerkId });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return { allowed: false, remaining: 0, isPro: false };
+  return {
+    allowed: row.allowed,
+    remaining: row.remaining,
+    total: row.total ?? FREE_QUOTA,
+    isPro: row.is_pro,
+  };
 }
 
 export async function POST(req: Request) {
@@ -80,7 +65,7 @@ export async function POST(req: Request) {
   const { getServiceClient } = await import('@/lib/supabase/client');
   const supabase = getServiceClient();
 
-  await getOrCreateUser(supabase, userId);
+  await ensureUser(supabase, userId);
   const quota = await checkQuota(supabase, userId);
   if (!quota.allowed) {
     return NextResponse.json({ error: 'Free quota used. Please upgrade.', quota: quota.remaining }, { status: 402 });
@@ -151,7 +136,7 @@ export async function POST(req: Request) {
     return processResult(result, outputFormat, userId, fullPrompt, size || 'auto', quota, supabase, isPro);
   } catch (err: any) {
     if (!isPro) {
-      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+      await supabase.rpc('add_quota', { p_clerk_id: userId, p_amount: 1 });
     }
     console.error('Image generation error:', err);
     return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 });
@@ -171,7 +156,7 @@ async function processResult(
   }
   if (!base64) {
     if (!isPro) {
-      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+      await supabase.rpc('add_quota', { p_clerk_id: userId, p_amount: 1 });
     }
     return NextResponse.json({ error: 'No image returned' }, { status: 500 });
   }
