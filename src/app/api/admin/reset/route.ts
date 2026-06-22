@@ -2,7 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/client';
 
-export async function POST() {
+export async function GET() {
   const supabase = getServiceClient();
 
   await supabase.from('generations').delete().neq('id', 0);
