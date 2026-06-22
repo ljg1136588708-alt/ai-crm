@@ -14,7 +14,7 @@ export default function LandingPage() {
           <Link href="/pricing" className="text-sm text-zinc-600 hover:text-zinc-900">{t.pricing}</Link>
           {isSignedIn ? (
             <>
-              <Link href="/dashboard" className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-4 py-2 text-sm font-medium hover:bg-violet-700">
+              <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">
                 {t.dashboard}
               </Link>
               <Link href="/dashboard" title={t.dashboard}>
