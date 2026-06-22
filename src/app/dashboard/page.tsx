@@ -401,7 +401,7 @@ export default function GeneratePage() {
                 disabled={historyPage <= 1}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                ← Prev
+                {t.prev}
               </button>
               <span className="text-xs text-zinc-400">
                 {historyPage} / {totalPages}
@@ -411,7 +411,7 @@ export default function GeneratePage() {
                 disabled={historyPage >= totalPages}
                 className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               >
-                Next →
+                {t.next}
               </button>
             </div>
           )}

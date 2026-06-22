@@ -31,6 +31,8 @@ const en = {
       autoRatio: 'Auto',
       imageTooLarge: 'Image too large. Please use an image under 10MB.',
       genFailed: 'Generation failed. Please try again.',
+      prev: '← Prev',
+      next: 'Next →',
       styleNames: {
         '写实摄影': 'Photorealistic', '动漫': 'Anime', '水彩': 'Watercolor', '素描': 'Sketch',
         '赛博朋克': 'Cyberpunk', '油画': 'Oil Painting', '电影感': 'Cinematic', '仙侠': 'Xianxia',
@@ -103,6 +105,8 @@ const zh: typeof en = {
       autoRatio: '智能',
       imageTooLarge: '图片太大，请使用 10MB 以内的图片。',
       genFailed: '生成失败，请重试。',
+      prev: '← 上一页',
+      next: '下一页 →',
       styleNames: {
         '写实摄影': '写实摄影', '动漫': '动漫', '水彩': '水彩', '素描': '素描',
         '赛博朋克': '赛博朋克', '油画': '油画', '电影感': '电影感', '仙侠': '仙侠',
