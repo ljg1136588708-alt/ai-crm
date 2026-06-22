@@ -17,7 +17,6 @@ const STYLE_EMOJI: Record<string, string> = {
 };
 
 const RATIOS = ['智能', '1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
-const FORMATS = ['PNG', 'JPG', 'WebP'];
 
 // Best aspect ratio for each style
 const STYLE_RATIO: Record<string, string> = {
@@ -56,7 +55,6 @@ export default function GeneratePage() {
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('');
   const [aspectRatio, setAspectRatio] = useState('智能');
-  const [format, setFormat] = useState('PNG');
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -124,7 +122,6 @@ export default function GeneratePage() {
           referenceImage: tab === 'image' ? referenceImage : undefined,
           style,
           aspectRatio: aspectRatio === '智能' ? undefined : aspectRatio,
-          format: format.toLowerCase(),
         }),
       });
 
@@ -290,24 +287,6 @@ export default function GeneratePage() {
               }`}
             >
               {r}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Format */}
-      <div className="mb-6">
-        <p className="text-xs text-zinc-400 mb-2">输出格式</p>
-        <div className="flex gap-1.5">
-          {FORMATS.map((f) => (
-            <button
-              key={f}
-              onClick={() => setFormat(f)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                format === f ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
-              }`}
-            >
-              {f}
             </button>
           ))}
         </div>
