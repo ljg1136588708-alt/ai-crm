@@ -364,18 +364,10 @@ export default function GeneratePage() {
       {/* Result */}
       {result && (
         <div className="mt-6">
-          <div className="rounded-xl overflow-hidden border border-zinc-200 relative">
+          <div className="rounded-xl overflow-hidden border border-zinc-200">
             <img src={result.image} alt="Generated" className="w-full" />
-            {!quota?.isPro && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <span className="text-white/30 text-4xl font-bold rotate-[-20deg] tracking-widest select-none">AI Foto</span>
-              </div>
-            )}
           </div>
           <p className="text-xs text-zinc-400 mt-2 truncate">{result.prompt}</p>
-          {!quota?.isPro && (
-            <p className="text-xs text-amber-600 mt-1">{t.watermarkNote}</p>
-          )}
           <Button onClick={download} className="mt-3 w-full" variant="outline">
             {t.download}
           </Button>

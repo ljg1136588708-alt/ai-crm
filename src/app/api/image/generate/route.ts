@@ -174,34 +174,10 @@ async function processResult(
   }
 
   const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
+  const dataUrl = `data:${mimeType};base64,${base64}`;
 
-  let buffer = Buffer.from(base64, 'base64');
-
-  // Add watermark for free users
-  if (!isPro) {
-    try {
-      const sharp = (await import('sharp')).default;
-      const metadata = await sharp(buffer).metadata();
-      const w = metadata.width || 1024;
-      const fontSize = Math.max(24, Math.round(w / 25));
-      const svgWatermark = `<svg width="${w}" height="${metadata.height || 1024}">
-        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
-          font-size="${fontSize}" font-family="Arial, sans-serif" font-weight="bold"
-          fill="rgba(255,255,255,0.35)" stroke="rgba(0,0,0,0.25)" stroke-width="2">
-          AI Foto
-        </text>
-      </svg>`;
-      buffer = Buffer.from(await sharp(buffer)
-        .composite([{ input: Buffer.from(svgWatermark), top: 0, left: 0 }])
-        .toBuffer());
-    } catch (e) {
-      // Watermark failed — store original
-      console.warn('Watermark failed, storing original:', e);
-    }
-  }
-
+  const buffer = Buffer.from(base64, 'base64');
   const filename = `${userId}/${Date.now()}.${outputFormat}`;
-  const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
   await supabase.storage.from('generations').upload(filename, buffer, { contentType: mimeType, upsert: false });
   const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
 
