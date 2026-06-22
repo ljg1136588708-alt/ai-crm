@@ -253,8 +253,8 @@ export default function GeneratePage() {
               onClick={() => {
                 const nextStyle = style === s ? '' : s;
                 setStyle(nextStyle);
-                // Auto-select best ratio for this style
-                if (nextStyle && STYLE_RATIO[nextStyle]) {
+                // Only auto-select ratio if user hasn't manually picked one
+                if (nextStyle && STYLE_RATIO[nextStyle] && aspectRatio === '智能') {
                   setAspectRatio(STYLE_RATIO[nextStyle]);
                 } else if (!nextStyle) {
                   setAspectRatio('智能');
