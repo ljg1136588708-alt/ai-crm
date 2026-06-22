@@ -15,8 +15,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const cookieStore = await cookies();
   const locale = (cookieStore.get('locale')?.value ?? 'en') as Locale;
 
+  // Clerk doesn't have built-in zh-CN, so provide custom strings
+  const clerkLocalization = locale === 'zh' ? {
+    'userButton.action__manageAccount': '管理账户',
+    'userButton.action__signOut': '退出登录',
+    'userButton.action__signOutAll': '退出所有设备',
+  } as any : undefined;
+
   return (
     <ClerkProvider
+      localization={clerkLocalization}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       afterSignOutUrl="/"
