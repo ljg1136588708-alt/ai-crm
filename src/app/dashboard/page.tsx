@@ -208,14 +208,12 @@ export default function GeneratePage() {
               {t.pro}
             </span>
           ) : (
-            <>
+            <div className="flex items-center gap-3">
               <span className={`text-xs px-2 py-1 rounded-full ${quota.remaining > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
                 {quota.remaining} / {quota.total} {t.free}
               </span>
-              {quota.remaining === 0 && (
-                <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">{t.upgrade}</Link>
-              )}
-            </>
+              <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">{t.upgrade}</Link>
+            </div>
           )}
         </div>
       )}
