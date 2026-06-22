@@ -51,9 +51,7 @@ export default function LandingPage() {
 
       <footer className="mt-auto max-w-2xl mx-auto text-center px-6 py-8 text-sm text-zinc-400">
         {t.contact}:{' '}
-        <a href="mailto:ljg1136588708@gmail.com" className="text-violet-600 hover:underline">
-          ljg1136588708@gmail.com
-        </a>
+        <span className="text-zinc-900">ljg1136588708@gmail.com</span>
       </footer>
     </main>
   );
