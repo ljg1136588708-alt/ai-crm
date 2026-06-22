@@ -209,24 +209,41 @@ export default function GeneratePage() {
         ))}
       </div>
 
-      {/* Input area */}
+      {/* Image upload */}
       {tab === 'image' && (
         <div className="mb-4">
           {referenceImage ? (
-            <div className="relative inline-block">
-              <img src={referenceImage} alt="Reference" className="w-48 h-48 object-cover rounded-lg border" />
+            <div className="relative flex justify-center">
+              <div className="relative group">
+                <img
+                  src={referenceImage}
+                  alt="Reference"
+                  className="max-w-full max-h-72 rounded-xl border border-zinc-200 shadow-sm object-contain"
+                />
+                <div className="absolute inset-0 rounded-xl bg-black/0 group-hover:bg-black/10 transition-colors" />
+                <button
+                  onClick={() => setReferenceImage(null)}
+                  className="absolute top-3 right-3 w-7 h-7 bg-white/90 hover:bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 rounded-full text-sm flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="移除图片"
+                >
+                  ×
+                </button>
+              </div>
               <button
-                onClick={() => setReferenceImage(null)}
-                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs flex items-center justify-center"
-              >×</button>
+                onClick={() => fileRef.current?.click()}
+                className="ml-4 px-4 py-2 border border-dashed border-zinc-300 rounded-lg text-xs text-zinc-400 hover:text-violet-600 hover:border-violet-300 transition-colors flex items-center gap-1"
+              >
+                🔄 换图
+              </button>
             </div>
           ) : (
             <div
               onClick={() => fileRef.current?.click()}
-              className="border-2 border-dashed border-zinc-300 rounded-lg p-8 text-center cursor-pointer hover:border-violet-400 transition-colors"
+              className="border-2 border-dashed border-zinc-300 rounded-xl p-10 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50/30 transition-colors"
             >
-              <div className="text-3xl mb-2">📁</div>
-              <p className="text-sm text-zinc-500">点击上传图片</p>
+              <div className="text-4xl mb-3">🖼️</div>
+              <p className="text-sm text-zinc-500 font-medium">点击上传图片</p>
+              <p className="text-xs text-zinc-400 mt-1">支持 JPG、PNG、WebP，最大 10MB</p>
             </div>
           )}
           <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
