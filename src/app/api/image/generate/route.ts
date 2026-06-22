@@ -99,7 +99,7 @@ export async function POST(req: Request) {
 
   const styleAddon = style && STYLE_PROMPTS[style] ? `, ${STYLE_PROMPTS[style]}` : '';
   const fullPrompt = `${prompt || 'A beautiful image'}${styleAddon}`;
-  const size = SIZES[aspectRatio || '1:1'] || '1024x1024';
+  const size = aspectRatio ? (SIZES[aspectRatio] || '1024x1024') : undefined;
   const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
@@ -107,7 +107,7 @@ export async function POST(req: Request) {
       model: MODEL,
       prompt: fullPrompt,
       n: 1,
-      size,
+      ...(size ? { size } : {}),
     };
 
     // Try passing reference image — APIYI may support it
