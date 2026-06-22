@@ -54,9 +54,12 @@ async function refundQuota(supabase: any, clerkId: string) {
 async function ensureUser(supabase: any, clerkId: string) {
   const { data: exists } = await supabase.from('users').select('clerk_id').eq('clerk_id', clerkId).single();
   if (!exists) {
-    await supabase.from('users').insert({
+    const { error } = await supabase.from('users').insert({
       clerk_id: clerkId, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA,
     });
+    // Surface insert failures instead of swallowing them — a failed insert here
+    // (e.g. a NOT NULL column the app doesn't populate) silently breaks quota.
+    if (error) console.error('ensureUser: failed to create user row:', error.message, error.details || '');
   }
 }
 

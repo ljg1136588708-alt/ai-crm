@@ -17,11 +17,14 @@ export async function GET() {
     .single();
 
   if (!user) {
-    const { data: created } = await supabase.from('users').insert({
+    const { data: created, error: insertError } = await supabase.from('users').insert({
       clerk_id: userId,
       quota_remaining: FREE_QUOTA,
       quota_total: FREE_QUOTA,
     }).select('quota_remaining, quota_total, is_pro, pro_since, pro_until, pro_interval').single();
+    // Don't swallow insert failures: if the row can't be created the badge would
+    // otherwise show a fake FREE_QUOTA while generation keeps failing with 402.
+    if (insertError) console.error('quota: failed to create user row:', insertError.message, insertError.details || '');
     user = created;
   }
 
