@@ -12,7 +12,7 @@ export default function PricingPage() {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const res = await fetch('/api/checkout', { method: 'POST' });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
@@ -76,7 +76,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-xs text-zinc-400 mt-8">
-          Secure payment via Stripe. Cancel anytime.
+          Secure payment via Lemon Squeezy. Cancel anytime.
         </p>
       </section>
 
