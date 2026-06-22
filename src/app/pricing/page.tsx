@@ -4,11 +4,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, Check } from 'lucide-react';
 import { useT } from '@/components/locale-provider';
-import { useUser } from '@clerk/nextjs';
+import { useUser, UserButton } from '@clerk/nextjs';
 
 export default function PricingPage() {
   const t = useT().aifoto.pricing;
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
   const [loading, setLoading] = useState<'monthly' | 'yearly' | null>(null);
   const router = useRouter();
 
@@ -79,7 +79,7 @@ export default function PricingPage() {
             {!isLoaded ? null : isSignedIn ? (
               <>
                 <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">{t.dashboard}</Link>
-                  <img src={user?.imageUrl} alt="" className="w-8 h-8 rounded-full border-2 border-zinc-200" />
+                <UserButton />
               </>
             ) : (
               <Link href="/sign-in" className="text-sm text-zinc-600 hover:text-zinc-900">{t.signIn}</Link>

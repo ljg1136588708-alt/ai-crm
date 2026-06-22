@@ -1,11 +1,11 @@
 'use client';
 import Link from 'next/link';
 import { useT } from '@/components/locale-provider';
-import { useUser } from '@clerk/nextjs';
+import { useUser, UserButton } from '@clerk/nextjs';
 
 export default function LandingPage() {
   const t = useT().aifoto.landing;
-  const { isLoaded, isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn } = useUser();
   return (
     <main className="min-h-screen">
       <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
@@ -17,7 +17,7 @@ export default function LandingPage() {
               <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">
                 {t.dashboard}
               </Link>
-              <img src={user?.imageUrl} alt="" className="w-8 h-8 rounded-full border-2 border-zinc-200" />
+              <UserButton />
             </>
           ) : (
             <>
