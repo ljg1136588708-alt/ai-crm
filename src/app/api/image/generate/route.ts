@@ -40,7 +40,9 @@ const FREE_QUOTA = 50;
 async function getOrCreateUser(supabase: any, clerkId: string) {
   const { data: existing } = await supabase.from('users').select('*').eq('clerk_id', clerkId).single();
   if (existing) {
-    // Reset quota for existing users during testing phase
+    // Pro users have unlimited — nothing to reset
+    if (existing.is_pro) return existing;
+    // Reset quota for existing free users during testing phase
     if (existing.quota_remaining <= 0) {
       await supabase.from('users').update({
         quota_remaining: FREE_QUOTA,
@@ -59,13 +61,16 @@ async function getOrCreateUser(supabase: any, clerkId: string) {
 }
 
 async function checkQuota(supabase: any, clerkId: string) {
-  const { data: user } = await supabase.from('users').select('quota_remaining').eq('clerk_id', clerkId).single();
-  if (!user || user.quota_remaining <= 0) return { allowed: false, remaining: user?.quota_remaining ?? 0 };
+  const { data: user } = await supabase.from('users').select('quota_remaining, is_pro').eq('clerk_id', clerkId).single();
+  if (!user) return { allowed: false, remaining: 0, isPro: false };
+  // Pro users: unlimited, don't deduct
+  if (user.is_pro) return { allowed: true, remaining: -1, total: -1, isPro: true };
+  if (user.quota_remaining <= 0) return { allowed: false, remaining: user.quota_remaining, isPro: false };
   const { data: updated } = await supabase.from('users')
     .update({ quota_remaining: user.quota_remaining - 1 })
     .eq('clerk_id', clerkId)
     .select('quota_remaining, quota_total').single();
-  return { allowed: true, remaining: updated?.quota_remaining ?? 0, total: updated?.quota_total ?? FREE_QUOTA };
+  return { allowed: true, remaining: updated?.quota_remaining ?? 0, total: updated?.quota_total ?? FREE_QUOTA, isPro: false };
 }
 
 export async function POST(req: Request) {
@@ -81,6 +86,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Free quota used. Please upgrade.', quota: quota.remaining }, { status: 402 });
   }
 
+  const isPro = quota.isPro || false;
   const body = await req.json();
   const { prompt, referenceImage, style, aspectRatio, format } = body as {
     prompt?: string; referenceImage?: string; style?: string;
@@ -137,14 +143,16 @@ export async function POST(req: Request) {
           throw new Error(retryResult.error?.message || `API error ${retryResp.status}`);
         }
         // Use retry result
-        return processResult(retryResult, outputFormat, userId, fullPrompt, size, quota, supabase);
+        return processResult(retryResult, outputFormat, userId, fullPrompt, size, quota, supabase, isPro);
       }
       throw new Error(result.error?.message || `API error ${response.status}`);
     }
 
-    return processResult(result, outputFormat, userId, fullPrompt, size, quota, supabase);
+    return processResult(result, outputFormat, userId, fullPrompt, size, quota, supabase, isPro);
   } catch (err: any) {
-    await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+    if (!isPro) {
+      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+    }
     console.error('Image generation error:', err);
     return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 });
   }
@@ -152,7 +160,7 @@ export async function POST(req: Request) {
 
 async function processResult(
   result: any, outputFormat: string, userId: string,
-  fullPrompt: string, size: string, quota: any, supabase: any
+  fullPrompt: string, size: string, quota: any, supabase: any, isPro: boolean
 ) {
   const imageData = result.data?.[0];
   let base64 = imageData?.b64_json;
@@ -162,7 +170,9 @@ async function processResult(
     base64 = Buffer.from(blob).toString('base64');
   }
   if (!base64) {
-    await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+    if (!isPro) {
+      await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
+    }
     return NextResponse.json({ error: 'No image returned' }, { status: 500 });
   }
 

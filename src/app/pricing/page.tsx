@@ -1,8 +1,31 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 export default function PricingPage() {
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubscribe = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/stripe/checkout', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(data.error || 'Checkout failed');
+        setLoading(false);
+      }
+    } catch {
+      alert('Network error. Please try again.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen">
       <header className="border-b border-zinc-200 bg-white">
@@ -22,20 +45,38 @@ export default function PricingPage() {
           <p className="text-sm text-zinc-500 mb-6">Cancel anytime</p>
 
           <ul className="text-sm text-zinc-600 space-y-2 mb-8 text-left">
-            {['Unlimited image generations', 'All 21 styles', 'All aspect ratios & formats', 'Generate from photos or text', 'Priority generation speed', 'Download in full resolution'].map((f) => (
+            {[
+              'Unlimited image generations',
+              'All 21 styles',
+              'All aspect ratios & formats',
+              'Generate from photos or text',
+              'Priority generation speed',
+              'Download in full resolution',
+            ].map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <span className="text-violet-600">✓</span> {f}
               </li>
             ))}
           </ul>
 
-          <Button className="w-full py-3 text-base bg-violet-600 hover:bg-violet-700">
-            Subscribe — $9.99/mo
+          <Button
+            className="w-full py-3 text-base bg-violet-600 hover:bg-violet-700"
+            onClick={handleSubscribe}
+            disabled={loading}
+          >
+            {loading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Redirecting...
+              </>
+            ) : (
+              'Subscribe — $9.99/mo'
+            )}
           </Button>
         </div>
 
         <p className="text-xs text-zinc-400 mt-8">
-          Coming soon. No card required for free trial.
+          Secure payment via Stripe. Cancel anytime.
         </p>
       </section>
 

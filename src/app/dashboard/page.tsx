@@ -37,7 +37,7 @@ export default function GeneratePage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [history, setHistory] = useState<GenerationResult[]>([]);
-  const [quota, setQuota] = useState<{ remaining: number; total: number } | null>(null);
+  const [quota, setQuota] = useState<{ remaining: number; total: number; isPro: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Load quota on mount and after each generation
@@ -116,7 +116,7 @@ export default function GeneratePage() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 402) {
-          setQuota({ remaining: 0, total: data.quota ?? 5 });
+          setQuota({ remaining: 0, total: data.quota ?? 5, isPro: false });
           throw new Error('Free quota used up. Upgrade to Pro.');
         }
         throw new Error(data.error || 'Failed');
@@ -152,11 +152,19 @@ export default function GeneratePage() {
       {/* Quota badge */}
       {quota && (
         <div className="flex items-center justify-between mb-4">
-          <span className={`text-xs px-2 py-1 rounded-full ${quota.remaining > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-            {quota.remaining} / {quota.total} free
-          </span>
-          {quota.remaining === 0 && (
-            <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">Upgrade →</Link>
+          {quota.isPro ? (
+            <span className="text-xs px-2 py-1 rounded-full bg-violet-100 text-violet-700 font-medium">
+              ⭐ PRO · Unlimited
+            </span>
+          ) : (
+            <>
+              <span className={`text-xs px-2 py-1 rounded-full ${quota.remaining > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
+                {quota.remaining} / {quota.total} free
+              </span>
+              {quota.remaining === 0 && (
+                <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">Upgrade →</Link>
+              )}
+            </>
           )}
         </div>
       )}
