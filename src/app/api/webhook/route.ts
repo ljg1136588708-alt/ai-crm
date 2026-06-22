@@ -62,8 +62,8 @@ export async function POST(req: Request) {
     if (txnType === 'subscr_cancel' || txnType === 'subscr_eot' || txnType === 'subscr_failed') {
       await supabase.from('users').update({
         is_pro: false,
-        quota_remaining: 50,
-        quota_total: 50,
+        quota_remaining: 30,
+        quota_total: 30,
       }).eq('clerk_id', clerkId);
 
       console.log(`⚠️ Pro ended for ${clerkId} (${txnType})`);

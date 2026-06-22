@@ -35,7 +35,8 @@ const SIZES: Record<string, string> = {
   '16:9': '1792x1024', '21:9': '2560x1080',
 };
 
-const FREE_QUOTA = 50;
+const FREE_QUOTA = 30;
+const FREE_STYLES = ['写实摄影', '动漫', '水彩', '电影感', '赛博朋克', '油画', '素描', 'Q版'];
 
 // Create the user row on first use. Idempotent: won't overwrite an existing row's quota.
 async function ensureUser(supabase: any, clerkId: string) {
@@ -80,6 +81,11 @@ export async function POST(req: Request) {
 
   if (!prompt && !referenceImage) {
     return NextResponse.json({ error: 'Provide prompt or reference image' }, { status: 400 });
+  }
+
+  // Free users: restrict to 8 popular styles
+  if (!isPro && style && !FREE_STYLES.includes(style)) {
+    return NextResponse.json({ error: 'This style requires Pro. Free users have access to 8 styles.' }, { status: 402 });
   }
 
   const styleAddon = style && STYLE_PROMPTS[style] ? `, ${STYLE_PROMPTS[style]}` : '';
@@ -168,10 +174,34 @@ async function processResult(
   }
 
   const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
-  const dataUrl = `data:${mimeType};base64,${base64}`;
 
-  const buffer = Buffer.from(base64, 'base64');
+  let buffer = Buffer.from(base64, 'base64');
+
+  // Add watermark for free users
+  if (!isPro) {
+    try {
+      const sharp = (await import('sharp')).default;
+      const metadata = await sharp(buffer).metadata();
+      const w = metadata.width || 1024;
+      const fontSize = Math.max(24, Math.round(w / 25));
+      const svgWatermark = `<svg width="${w}" height="${metadata.height || 1024}">
+        <text x="50%" y="50%" text-anchor="middle" dominant-baseline="central"
+          font-size="${fontSize}" font-family="Arial, sans-serif" font-weight="bold"
+          fill="rgba(255,255,255,0.35)" stroke="rgba(0,0,0,0.25)" stroke-width="2">
+          AI Foto
+        </text>
+      </svg>`;
+      buffer = Buffer.from(await sharp(buffer)
+        .composite([{ input: Buffer.from(svgWatermark), top: 0, left: 0 }])
+        .toBuffer());
+    } catch (e) {
+      // Watermark failed — store original
+      console.warn('Watermark failed, storing original:', e);
+    }
+  }
+
   const filename = `${userId}/${Date.now()}.${outputFormat}`;
+  const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
   await supabase.storage.from('generations').upload(filename, buffer, { contentType: mimeType, upsert: false });
   const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
 

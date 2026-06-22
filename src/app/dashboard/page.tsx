@@ -9,6 +9,7 @@ const STYLES = [
   '仙侠', '日漫', '复古', '科幻', 'Q版', '贴纸', '游戏CG', '手办',
   '美漫', '废土科幻', '3D卡通', '吉卜力', '国漫2D', '国漫3D',
 ];
+const FREE_STYLES = ['写实摄影', '动漫', '水彩', '电影感', '赛博朋克', '油画', '素描', 'Q版'];
 
 const STYLE_EMOJI: Record<string, string> = {
   '写实摄影': '📷', '动漫': '🎨', '水彩': '🖌️', '素描': '✏️', '赛博朋克': '🤖',
@@ -292,28 +293,37 @@ export default function GeneratePage() {
 
       {/* Style selector */}
       <div className="mb-4">
-        <p className="text-xs text-zinc-400 mb-2">{t.style}</p>
+        <p className="text-xs text-zinc-400 mb-2">
+          {t.style} {!quota?.isPro && <span className="text-violet-400">({t.freeStylesNote})</span>}
+        </p>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
-          {STYLES.map((s) => (
+          {STYLES.map((s) => {
+            const isLocked = !quota?.isPro && !FREE_STYLES.includes(s);
+            return (
             <button
               key={s}
               onClick={() => {
+                if (isLocked) return;
                 const nextStyle = style === s ? '' : s;
                 setStyle(nextStyle);
-                // Only auto-select ratio if user hasn't manually picked one
                 if (nextStyle && STYLE_RATIO[nextStyle] && aspectRatio === '智能') {
                   setAspectRatio(STYLE_RATIO[nextStyle]);
                 } else if (!nextStyle) {
                   setAspectRatio('智能');
                 }
               }}
+              disabled={isLocked}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
-                style === s ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+                style === s ? 'bg-violet-600 text-white' :
+                isLocked ? 'bg-zinc-50 text-zinc-300 cursor-not-allowed' :
+                'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
             >
               {(STYLE_EMOJI[s] || '')} {t.styleNames[s] || s}
+              {isLocked && <span className="ml-1">🔒</span>}
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -354,10 +364,18 @@ export default function GeneratePage() {
       {/* Result */}
       {result && (
         <div className="mt-6">
-          <div className="rounded-xl overflow-hidden border border-zinc-200">
+          <div className="rounded-xl overflow-hidden border border-zinc-200 relative">
             <img src={result.image} alt="Generated" className="w-full" />
+            {!quota?.isPro && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <span className="text-white/30 text-4xl font-bold rotate-[-20deg] tracking-widest select-none">AI Foto</span>
+              </div>
+            )}
           </div>
           <p className="text-xs text-zinc-400 mt-2 truncate">{result.prompt}</p>
+          {!quota?.isPro && (
+            <p className="text-xs text-amber-600 mt-1">{t.watermarkNote}</p>
+          )}
           <Button onClick={download} className="mt-3 w-full" variant="outline">
             {t.download}
           </Button>
