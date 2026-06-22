@@ -153,12 +153,31 @@ export default function GeneratePage() {
     }
   };
 
-  const download = () => {
+  const download = async () => {
     if (!result) return;
-    const a = document.createElement('a');
-    a.href = result.image;
-    a.download = `generated-${Date.now()}.png`;
-    a.click();
+    const src = result.image;
+    // If it's a remote URL (e.g., Supabase), fetch it first
+    if (src.startsWith('http')) {
+      try {
+        const resp = await fetch(src);
+        const blob = await resp.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `generated-${Date.now()}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      } catch {
+        // Fallback: just open in new tab
+        window.open(src, '_blank');
+      }
+    } else {
+      // Base64 data URL — direct download
+      const a = document.createElement('a');
+      a.href = src;
+      a.download = `generated-${Date.now()}.png`;
+      a.click();
+    }
   };
 
   return (
