@@ -34,6 +34,10 @@ const en = {
       next: 'Next →',
       freeStylesNote: 'Free: 8 styles. Pro: all 21.',
       styleLocked: 'Pro only',
+      proSince: 'Pro since',
+      proUntil: 'Pro until',
+      proMonthly: 'Monthly',
+      proYearly: 'Yearly',
       styleNames: {
         '写实摄影': 'Photorealistic', '动漫': 'Anime', '水彩': 'Watercolor', '素描': 'Sketch',
         '赛博朋克': 'Cyberpunk', '油画': 'Oil Painting', '电影感': 'Cinematic', '仙侠': 'Xianxia',
@@ -131,6 +135,10 @@ const zh: typeof en = {
       next: '下一页 →',
       freeStylesNote: '免费：8 种风格。Pro：全部 21 种。',
       styleLocked: 'Pro 专属',
+      proSince: 'Pro 开通于',
+      proUntil: 'Pro 到期',
+      proMonthly: '月付',
+      proYearly: '年付',
       styleNames: {
         '写实摄影': '写实摄影', '动漫': '动漫', '水彩': '水彩', '素描': '素描',
         '赛博朋克': '赛博朋克', '油画': '油画', '电影感': '电影感', '仙侠': '仙侠',

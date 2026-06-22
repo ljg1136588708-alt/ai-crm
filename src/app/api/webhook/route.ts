@@ -6,7 +6,6 @@ import { getServiceClient } from '@/lib/supabase/client';
 
 async function verifyIPN(body: string): Promise<boolean> {
   try {
-    // Post back to PayPal for verification
     const verifyUrl = process.env.PAYPAL_SANDBOX === 'true'
       ? 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr'
       : 'https://ipnpb.paypal.com/cgi-bin/webscr';
@@ -35,7 +34,6 @@ export async function POST(req: Request) {
 
   const params = new URLSearchParams(body);
   const txnType = params.get('txn_type') || '';
-  const paymentStatus = params.get('payment_status') || '';
   const clerkId = params.get('custom') || '';
 
   if (!clerkId) {
@@ -45,23 +43,32 @@ export async function POST(req: Request) {
   const supabase = getServiceClient();
 
   try {
-    // Subscription created
+    // Subscription created or renewed
     if (txnType === 'subscr_signup' || txnType === 'subscr_payment') {
+      const itemNumber = params.get('item_number') || '';
+      const interval = itemNumber === 'aifoto-pro-yearly' ? 'yearly' : 'monthly';
+
+      // Only set pro_since on first activation (don't overwrite on renewal)
+      const { data: existing } = await supabase.from('users').select('pro_since').eq('clerk_id', clerkId).single();
+
       await supabase.from('users').upsert({
         clerk_id: clerkId,
         is_pro: true,
-        ls_order_id: params.get('subscr_id') || Date.now().toString(),
+        pro_interval: interval,
+        pro_since: existing?.pro_since || new Date().toISOString(),
+        subscr_id: params.get('subscr_id') || Date.now().toString(),
         quota_remaining: -1,
         quota_total: -1,
       }, { onConflict: 'clerk_id' });
 
-      console.log(`✅ Pro activated for ${clerkId} (PayPal sub ${params.get('subscr_id')})`);
+      console.log(`✅ Pro activated for ${clerkId} (${interval}, sub ${params.get('subscr_id')})`);
     }
 
-    // Subscription cancelled or expired
+    // Subscription ended
     if (txnType === 'subscr_cancel' || txnType === 'subscr_eot' || txnType === 'subscr_failed') {
       await supabase.from('users').update({
         is_pro: false,
+        pro_until: new Date().toISOString(),
         quota_remaining: 12,
         quota_total: 12,
       }).eq('clerk_id', clerkId);
@@ -73,6 +80,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 
-  // PayPal expects an empty 200 response
   return new NextResponse(null, { status: 200 });
 }

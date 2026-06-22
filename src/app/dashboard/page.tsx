@@ -67,7 +67,7 @@ export default function GeneratePage() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
   const PAGE_SIZE = 12;
-  const [quota, setQuota] = useState<{ remaining: number; total: number; isPro: boolean } | null>(null);
+  const [quota, setQuota] = useState<{ remaining: number; total: number; isPro: boolean; proSince: string | null; proUntil: string | null; proInterval: string | null } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Load quota on mount and after each generation
@@ -155,7 +155,7 @@ export default function GeneratePage() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 402) {
-          setQuota({ remaining: 0, total: data.quota ?? 5, isPro: false });
+          setQuota({ remaining: 0, total: data.quota ?? 12, isPro: false, proSince: null, proUntil: null, proInterval: null });
           throw new Error(t.quotaUsed);
         }
         throw new Error(data.error || t.genFailed);
@@ -170,7 +170,7 @@ export default function GeneratePage() {
       setResult(genResult);
       refreshHistory();
       // Refresh quota
-      if (data.quota) setQuota(data.quota);
+      setQuota(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -211,9 +211,24 @@ export default function GeneratePage() {
       {quota && (
         <div className="flex items-center justify-between mb-4">
           {quota.isPro ? (
-            <span className="text-xs px-2 py-1 rounded-full bg-violet-100 text-violet-700 font-medium">
-              {t.pro}
-            </span>
+            <div>
+              <span className="text-xs px-2 py-1 rounded-full bg-violet-100 text-violet-700 font-medium">
+                {t.pro}
+              </span>
+              {quota.proSince && (
+                <span className="text-xs text-zinc-400 ml-2">
+                  {t.proSince} {new Date(quota.proSince).toLocaleDateString('zh-CN')}
+                  {quota.proInterval && (
+                    <span className="text-violet-500 font-medium"> · {quota.proInterval === 'yearly' ? t.proYearly : t.proMonthly}</span>
+                  )}
+                </span>
+              )}
+              {quota.proUntil && (
+                <span className="text-xs text-amber-500 ml-2">
+                  {t.proUntil} {new Date(quota.proUntil).toLocaleDateString('zh-CN')}
+                </span>
+              )}
+            </div>
           ) : (
             <div className="flex items-center gap-3">
               <span className={`text-xs px-2 py-1 rounded-full ${quota.remaining > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>

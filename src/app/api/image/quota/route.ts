@@ -1,4 +1,4 @@
-// GET /api/image/quota — check remaining quota + pro status
+// GET /api/image/quota — check remaining quota + pro status + subscription info
 import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { getServiceClient } from '@/lib/supabase/client';
@@ -12,17 +12,16 @@ export async function GET() {
   const supabase = getServiceClient();
   let { data: user } = await supabase
     .from('users')
-    .select('quota_remaining, quota_total, is_pro')
+    .select('quota_remaining, quota_total, is_pro, pro_since, pro_until, pro_interval')
     .eq('clerk_id', userId)
     .single();
 
-  // Create user if not exists
   if (!user) {
     const { data: created } = await supabase.from('users').insert({
       clerk_id: userId,
       quota_remaining: FREE_QUOTA,
       quota_total: FREE_QUOTA,
-    }).select('quota_remaining, quota_total, is_pro').single();
+    }).select('quota_remaining, quota_total, is_pro, pro_since, pro_until, pro_interval').single();
     user = created;
   }
 
@@ -30,5 +29,8 @@ export async function GET() {
     remaining: user?.quota_remaining ?? FREE_QUOTA,
     total: user?.quota_total ?? FREE_QUOTA,
     isPro: user?.is_pro ?? false,
+    proSince: user?.pro_since || null,
+    proUntil: user?.pro_until || null,
+    proInterval: user?.pro_interval || null,
   });
 }
