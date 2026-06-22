@@ -35,12 +35,14 @@ export default function LandingPage() {
           {t.heroDesc}
         </p>
         <div className="flex gap-4 justify-center">
-          <Link
-            href={isSignedIn ? '/dashboard' : '/sign-up'}
-            className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-8 py-3 text-base font-medium hover:bg-violet-700"
-          >
-            {isSignedIn ? t.dashboard : t.tryFree}
-          </Link>
+          {!isSignedIn && (
+            <Link
+              href="/sign-up"
+              className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-8 py-3 text-base font-medium hover:bg-violet-700"
+            >
+              {t.tryFree}
+            </Link>
+          )}
         </div>
       </section>
     </main>
