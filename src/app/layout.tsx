@@ -17,9 +17,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Clerk doesn't have built-in zh-CN, so provide custom strings
   const clerkLocalization = locale === 'zh' ? {
-    'userButton.action__manageAccount': '管理账户',
-    'userButton.action__signOut': '退出登录',
-    'userButton.action__signOutAll': '退出所有设备',
+    locale: 'zh-CN',
+    userButton: {
+      action__manageAccount: '管理账户',
+      action__signOut: '退出登录',
+      action__signOutAll: '退出所有设备',
+    },
   } as any : undefined;
 
   return (
