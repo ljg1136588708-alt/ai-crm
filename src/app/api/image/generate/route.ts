@@ -67,6 +67,13 @@ async function checkQuota(supabase: any, clerkId: string) {
   if (!user) return { allowed: false, remaining: 0, total: FREE_QUOTA, isPro: false };
   if (user.is_pro) return { allowed: true, remaining: -1, total: -1, isPro: true };
 
+  // Repair corrupted quota
+  if (!user.quota_total || user.quota_total <= 0) {
+    await supabase.from('users').update({ quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA }).eq('clerk_id', clerkId);
+    user.quota_remaining = FREE_QUOTA;
+    user.quota_total = FREE_QUOTA;
+  }
+
   if (user.quota_remaining <= 0) {
     return { allowed: false, remaining: 0, total: user.quota_total, isPro: false };
   }
