@@ -19,6 +19,31 @@ const STYLE_EMOJI: Record<string, string> = {
 const RATIOS = ['智能', '1:1', '2:3', '3:2', '3:4', '4:3', '9:16', '16:9', '21:9'];
 const FORMATS = ['PNG', 'JPG', 'WebP'];
 
+// Best aspect ratio for each style
+const STYLE_RATIO: Record<string, string> = {
+  '电影感': '21:9',
+  '赛博朋克': '21:9',
+  '废土科幻': '21:9',
+  '写实摄影': '3:2',
+  '游戏CG': '16:9',
+  '仙侠': '9:16',
+  '动漫': '2:3',
+  '日漫': '2:3',
+  '国漫2D': '2:3',
+  '国漫3D': '9:16',
+  '油画': '3:4',
+  '水彩': '3:4',
+  '素描': '3:4',
+  '吉卜力': '16:9',
+  '科幻': '21:9',
+  'Q版': '1:1',
+  '贴纸': '1:1',
+  '手办': '2:3',
+  '美漫': '3:2',
+  '3D卡通': '16:9',
+  '复古': '3:2',
+};
+
 type GenerationResult = {
   image: string;       // base64 data URL (for current result display)
   imageUrl?: string;   // Supabase public URL (persisted in history)
@@ -225,7 +250,16 @@ export default function GeneratePage() {
           {STYLES.map((s) => (
             <button
               key={s}
-              onClick={() => setStyle(style === s ? '' : s)}
+              onClick={() => {
+                const nextStyle = style === s ? '' : s;
+                setStyle(nextStyle);
+                // Auto-select best ratio for this style
+                if (nextStyle && STYLE_RATIO[nextStyle]) {
+                  setAspectRatio(STYLE_RATIO[nextStyle]);
+                } else if (!nextStyle) {
+                  setAspectRatio('智能');
+                }
+              }}
               className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
                 style === s ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
               }`}
