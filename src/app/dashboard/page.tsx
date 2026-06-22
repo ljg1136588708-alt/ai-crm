@@ -55,7 +55,7 @@ export default function GeneratePage() {
   const [tab, setTab] = useState<'text' | 'image'>('text');
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('');
-  const [aspectRatio, setAspectRatio] = useState('1:1');
+  const [aspectRatio, setAspectRatio] = useState('智能');
   const [format, setFormat] = useState('PNG');
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
