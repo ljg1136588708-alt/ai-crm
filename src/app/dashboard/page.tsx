@@ -97,7 +97,13 @@ export default function GeneratePage() {
     e.stopPropagation();
     const res = await fetch(`/api/image/history?id=${id}`, { method: 'DELETE' });
     if (res.ok) {
-      fetchHistory(historyPage);
+      // If this was the only item on the last page, go back
+      const remaining = history.length - 1;
+      if (remaining === 0 && historyPage > 1) {
+        fetchHistory(historyPage - 1);
+      } else {
+        fetchHistory(historyPage);
+      }
     }
   };
 

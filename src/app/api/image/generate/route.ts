@@ -139,7 +139,13 @@ export async function POST(req: Request) {
       await supabase.rpc('add_quota', { p_clerk_id: userId, p_amount: 1 });
     }
     console.error('Image generation error:', err);
-    return NextResponse.json({ error: err.message || 'Generation failed' }, { status: 500 });
+    const msg = err.message || '';
+    const userMsg = msg.includes('key') || msg.includes('auth') || msg.includes('token')
+      ? 'Service temporarily unavailable. Please try again later.'
+      : msg.includes('rate') || msg.includes('limit')
+        ? 'Too many requests. Please wait a moment.'
+        : 'Generation failed. Please try again.';
+    return NextResponse.json({ error: userMsg }, { status: 500 });
   }
 }
 
