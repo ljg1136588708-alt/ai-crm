@@ -8,7 +8,7 @@ export default function LandingPage() {
   const { isLoaded, isSignedIn } = useUser();
   return (
     <main className="min-h-screen flex flex-col">
-      <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
+      <nav className="w-full flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
         <span className="text-xl font-bold tracking-tight">AI Foto</span>
         <div className="flex items-center gap-4">
           <Link href="/pricing" className="text-sm text-zinc-600 hover:text-zinc-900">{t.pricing}</Link>
