@@ -2,7 +2,6 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Loader2, Check } from 'lucide-react';
 import { useT } from '@/components/locale-provider';
 import { useUser } from '@clerk/nextjs';
@@ -131,20 +130,22 @@ export default function PricingPage() {
                   {plan.cta}
                 </Link>
               ) : (
-                <Button
-                  className="w-full py-3 text-base bg-violet-600 hover:bg-violet-700"
+                <button
+                  className={`block w-full py-3 text-base rounded-lg text-center font-medium text-white transition-colors ${
+                    loading !== null ? 'bg-violet-400 cursor-not-allowed' : 'bg-violet-600 hover:bg-violet-700'
+                  }`}
                   onClick={() => handleSubscribe(plan.key)}
                   disabled={loading !== null}
                 >
                   {loading === plan.key ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <span className="inline-flex items-center justify-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
                       {t.redirecting}
-                    </>
+                    </span>
                   ) : (
                     plan.cta
                   )}
-                </Button>
+                </button>
               )}
             </div>
           ))}
