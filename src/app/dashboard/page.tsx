@@ -216,7 +216,7 @@ export default function GeneratePage() {
               </span>
               {quota.proSince && (
                 <span className="text-xs text-zinc-400 ml-2">
-                  {t.proSince} {new Date(quota.proSince).toLocaleDateString('zh-CN')}
+                  {t.proSince} {new Date(quota.proSince).toLocaleDateString()}
                   {quota.proInterval && (
                     <span className="text-violet-500 font-medium"> · {quota.proInterval === 'yearly' ? t.proYearly : t.proMonthly}</span>
                   )}
@@ -224,7 +224,7 @@ export default function GeneratePage() {
               )}
               {quota.proUntil && (
                 <span className="text-xs text-amber-500 ml-2">
-                  {t.proUntil} {new Date(quota.proUntil).toLocaleDateString('zh-CN')}
+                  {t.proUntil} {new Date(quota.proUntil).toLocaleDateString()}
                 </span>
               )}
             </div>
