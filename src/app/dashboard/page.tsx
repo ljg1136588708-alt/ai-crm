@@ -45,7 +45,8 @@ const STYLE_RATIO: Record<string, string> = {
 };
 
 type GenerationResult = {
-  image: string;       // base64 data URL (for current result display)
+  id?: number;
+  image: string;       // base64 data URL or Supabase URL
   imageUrl?: string;   // Supabase public URL (persisted in history)
   prompt: string;
   timestamp: number;
@@ -62,6 +63,9 @@ export default function GeneratePage() {
   const [error, setError] = useState('');
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [history, setHistory] = useState<GenerationResult[]>([]);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotal, setHistoryTotal] = useState(0);
+  const PAGE_SIZE = 12;
   const [quota, setQuota] = useState<{ remaining: number; total: number; isPro: boolean } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -72,18 +76,32 @@ export default function GeneratePage() {
     }).catch(() => {});
   };
 
-  // Load history from Supabase
-  const fetchHistory = () => {
-    fetch('/api/image/history?limit=50').then(r => r.json()).then(d => {
+  // Load history from Supabase (paginated)
+  const fetchHistory = (page = 1) => {
+    const offset = (page - 1) * PAGE_SIZE;
+    fetch(`/api/image/history?limit=${PAGE_SIZE}&offset=${offset}`).then(r => r.json()).then(d => {
       if (d.items) {
         setHistory(d.items.map((item: any) => ({
+          id: item.id,
           image: item.image_url || '',
           prompt: item.prompt || '',
           timestamp: new Date(item.created_at).getTime(),
         })));
+        setHistoryTotal(d.total || 0);
+        setHistoryPage(page);
       }
     }).catch(() => {});
   };
+
+  const deleteHistoryItem = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const res = await fetch(`/api/image/history?id=${id}`, { method: 'DELETE' });
+    if (res.ok) {
+      fetchHistory(historyPage);
+    }
+  };
+
+  const totalPages = Math.ceil(historyTotal / PAGE_SIZE);
 
   useEffect(() => {
     fetchQuota();
@@ -92,7 +110,7 @@ export default function GeneratePage() {
 
   // After generating, refresh history from Supabase
   const refreshHistory = () => {
-    fetchHistory();
+    fetchHistory(1);
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -348,20 +366,51 @@ export default function GeneratePage() {
           <h2 className="text-lg font-semibold mb-4">{t.history}</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
             {history.filter(item => item.image && item.image.length > 10).map((item, i) => (
-              <button
-                key={i}
-                onClick={() => setResult(item)}
-                className="aspect-square rounded-lg overflow-hidden border border-zinc-200 hover:border-violet-400 transition-colors"
-              >
-                <img src={item.image} alt="" className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).parentElement!.style.display = 'none';
-                  }}
-                />
-              </button>
+              <div key={item.id || i} className="relative group">
+                <button
+                  onClick={() => setResult(item)}
+                  className="w-full aspect-square rounded-lg overflow-hidden border border-zinc-200 hover:border-violet-400 transition-colors"
+                >
+                  <img src={item.image} alt="" className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).parentElement!.style.display = 'none';
+                    }}
+                  />
+                </button>
+                <button
+                  onClick={(e) => item.id && deleteHistoryItem(item.id, e)}
+                  className="absolute top-1 right-1 w-6 h-6 bg-red-500/80 hover:bg-red-600 text-white rounded-full text-xs flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Delete"
+                >
+                  ×
+                </button>
+              </div>
             ))}
           </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-6">
+              <button
+                onClick={() => fetchHistory(historyPage - 1)}
+                disabled={historyPage <= 1}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Prev
+              </button>
+              <span className="text-xs text-zinc-400">
+                {historyPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => fetchHistory(historyPage + 1)}
+                disabled={historyPage >= totalPages}
+                className="px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 text-zinc-600 hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
