@@ -72,37 +72,27 @@ export default function GeneratePage() {
     }).catch(() => {});
   };
 
+  // Load history from Supabase
+  const fetchHistory = () => {
+    fetch('/api/image/history?limit=50').then(r => r.json()).then(d => {
+      if (d.items) {
+        setHistory(d.items.map((item: any) => ({
+          image: item.image_url || '',
+          prompt: item.prompt || '',
+          timestamp: new Date(item.created_at).getTime(),
+        })));
+      }
+    }).catch(() => {});
+  };
+
   useEffect(() => {
     fetchQuota();
+    fetchHistory();
   }, []);
 
-  // Load history from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('generation-history');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Filter out entries with no valid image URL
-        setHistory(parsed.filter((item: GenerationResult) => item.image && item.image.length > 50));
-      }
-    } catch {}
-  }, []);
-
-  const saveToHistory = (item: GenerationResult) => {
-    // Don't save base64 image to localStorage (too large).
-    // Store URL and prompt only.
-    const slim = {
-      image: item.imageUrl || '',  // use Supabase URL for thumbnail
-      prompt: item.prompt,
-      timestamp: item.timestamp,
-    };
-    const updated = [slim as GenerationResult, ...history].slice(0, 50);
-    setHistory(updated);
-    try {
-      localStorage.setItem('generation-history', JSON.stringify(updated));
-    } catch {
-      // localStorage full — oldest items will be dropped on next save
-    }
+  // After generating, refresh history from Supabase
+  const refreshHistory = () => {
+    fetchHistory();
   };
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -154,7 +144,7 @@ export default function GeneratePage() {
         timestamp: Date.now(),
       };
       setResult(genResult);
-      saveToHistory(genResult);
+      refreshHistory();
       // Refresh quota
       if (data.quota) setQuota(data.quota);
     } catch (err: any) {
