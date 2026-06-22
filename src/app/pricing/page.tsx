@@ -76,7 +76,7 @@ export default function PricingPage() {
         </div>
 
         <p className="text-xs text-zinc-400 mt-8">
-          Secure payment via Gumroad. Cancel anytime.
+          Secure payment via PayPal. Cancel anytime.
         </p>
       </section>
 
