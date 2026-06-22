@@ -3,7 +3,11 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
 const APIYI_BASE = 'https://api.apiyi.com/v1';
+const APIYI_GEMINI_BASE = 'https://api.apiyi.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image';
+// The Gemini-native generateContent endpoint expects the -preview model id
+// (per APIYI's image-edit docs), unlike the OpenAI-compatible images endpoint.
+const EDIT_MODEL = 'gemini-3.1-flash-image-preview';
 
 const STYLE_PROMPTS: Record<string, string> = {
   '写实摄影': 'photorealistic, professional photography, detailed texture, natural lighting',
@@ -104,83 +108,49 @@ export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { getServiceClient } = await import('@/lib/supabase/client');
-  const supabase = getServiceClient();
-
-  await ensureUser(supabase, userId);
-  const quota = await checkQuota(supabase, userId);
-  if (!quota.allowed) {
-    return NextResponse.json({ error: 'Free quota used. Please upgrade.', quota: quota.remaining }, { status: 402 });
-  }
-
-  const isPro = quota.isPro || false;
+  // Parse and validate the request BEFORE touching quota, so a rejected
+  // request (empty prompt, locked style) never costs the user a credit.
   const body = await req.json();
-  const { prompt, referenceImage, style, aspectRatio, format } = body as {
+  const { prompt, referenceImage, style, aspectRatio } = body as {
     prompt?: string; referenceImage?: string; style?: string;
-    aspectRatio?: string; format?: string;
+    aspectRatio?: string;
   };
 
   if (!prompt && !referenceImage) {
     return NextResponse.json({ error: 'Provide prompt or reference image' }, { status: 400 });
   }
 
+  const { getServiceClient } = await import('@/lib/supabase/client');
+  const supabase = getServiceClient();
+
+  await ensureUser(supabase, userId);
+
+  // Read pro status first so the free-style gate can reject without deducting.
+  const { data: statusRow } = await supabase.from('users').select('is_pro').eq('clerk_id', userId).single();
+  const isPro = statusRow?.is_pro || false;
+
   // Free users: restrict to 8 popular styles
   if (!isPro && style && !FREE_STYLES.includes(style)) {
     return NextResponse.json({ error: 'This style requires Pro. Free users have access to 8 styles.' }, { status: 402 });
   }
 
+  const quota = await checkQuota(supabase, userId);
+  if (!quota.allowed) {
+    return NextResponse.json({ error: 'Free quota used. Please upgrade.', quota: quota.remaining }, { status: 402 });
+  }
+
   const styleAddon = style && STYLE_PROMPTS[style] ? `, ${STYLE_PROMPTS[style]}` : '';
   const fullPrompt = `${prompt || 'A beautiful image'}${styleAddon}`;
   const size = aspectRatio ? (SIZES[aspectRatio] || '1024x1024') : undefined;
-  const outputFormat = format === 'jpg' ? 'jpeg' : (format === 'webp' ? 'webp' : 'png');
 
   try {
-    const bodyObj: Record<string, unknown> = {
-      model: MODEL,
-      prompt: fullPrompt,
-      n: 1,
-      ...(size ? { size } : {}),
-    };
+    // Text-to-image uses the OpenAI-compatible endpoint; image-to-image/editing
+    // uses the Gemini-native generateContent endpoint (per APIYI docs).
+    const base64 = referenceImage
+      ? await editImage(fullPrompt, referenceImage, aspectRatio)
+      : await generateImage(fullPrompt, size);
 
-    // Try passing reference image — APIYI may support it
-    if (referenceImage) {
-      bodyObj.image = referenceImage;
-    }
-
-    const response = await fetch(`${APIYI_BASE}/images/generations`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(bodyObj),
-    });
-
-    const result = await response.json();
-    if (!response.ok) {
-      // If APIYI rejects 'image' param for image-to-image, fall back
-      if (referenceImage && result.error?.param === 'image') {
-        // Retry without image param
-        delete bodyObj.image;
-        const retryResp = await fetch(`${APIYI_BASE}/images/generations`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ ...bodyObj, prompt: `${fullPrompt}\n[Style transfer from uploaded photo]` }),
-        });
-        const retryResult = await retryResp.json();
-        if (!retryResp.ok) {
-          throw new Error(retryResult.error?.message || `API error ${retryResp.status}`);
-        }
-        // Use retry result
-        return processResult(retryResult, outputFormat, userId, fullPrompt, size || 'auto', quota, supabase, isPro);
-      }
-      throw new Error(result.error?.message || `API error ${response.status}`);
-    }
-
-    return processResult(result, outputFormat, userId, fullPrompt, size || 'auto', quota, supabase, isPro);
+    return await saveAndRespond(base64, userId, fullPrompt, size || aspectRatio || 'auto', quota, supabase);
   } catch (err: any) {
     if (!isPro) {
       await refundQuota(supabase, userId);
@@ -196,29 +166,77 @@ export async function POST(req: Request) {
   }
 }
 
-async function processResult(
-  result: any, outputFormat: string, userId: string,
-  fullPrompt: string, size: string, quota: any, supabase: any, isPro: boolean
-) {
+// Text-to-image via the OpenAI-compatible /v1/images/generations endpoint.
+async function generateImage(fullPrompt: string, size?: string): Promise<string> {
+  const resp = await fetch(`${APIYI_BASE}/images/generations`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ model: MODEL, prompt: fullPrompt, n: 1, ...(size ? { size } : {}) }),
+  });
+  const result = await resp.json();
+  if (!resp.ok) throw new Error(result.error?.message || `API error ${resp.status}`);
+
   const imageData = result.data?.[0];
   let base64 = imageData?.b64_json;
   if (!base64 && imageData?.url) {
     const imageResp = await fetch(imageData.url);
-    const blob = await imageResp.arrayBuffer();
-    base64 = Buffer.from(blob).toString('base64');
+    base64 = Buffer.from(await imageResp.arrayBuffer()).toString('base64');
   }
-  if (!base64) {
-    if (!isPro) {
-      await refundQuota(supabase, userId);
-    }
-    return NextResponse.json({ error: 'No image returned' }, { status: 500 });
-  }
+  if (!base64) throw new Error('No image returned');
+  return base64;
+}
 
-  const mimeType = outputFormat === 'jpeg' ? 'image/jpeg' : outputFormat === 'webp' ? 'image/webp' : 'image/png';
+// Image-to-image / editing via Gemini-native generateContent.
+// The reference image arrives as a data URL; Gemini needs the raw base64 and
+// MIME type passed separately in an inlineData part.
+async function editImage(fullPrompt: string, referenceImage: string, aspectRatio?: string): Promise<string> {
+  const m = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]*)$/.exec(referenceImage);
+  const inlineMime = m?.[1] || 'image/png';
+  const inlineData = m?.[2] || referenceImage;
+
+  const reqBody = {
+    contents: [{
+      parts: [
+        { text: fullPrompt },
+        { inlineData: { mimeType: inlineMime, data: inlineData } },
+      ],
+    }],
+    generationConfig: {
+      responseModalities: ['IMAGE'],
+      ...(aspectRatio ? { imageConfig: { aspectRatio } } : {}),
+    },
+  };
+
+  const resp = await fetch(`${APIYI_GEMINI_BASE}/models/${EDIT_MODEL}:generateContent`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.APIYI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(reqBody),
+  });
+  const result = await resp.json();
+  if (!resp.ok) throw new Error(result.error?.message || `API error ${resp.status}`);
+
+  const parts = result.candidates?.[0]?.content?.parts || [];
+  const base64 = parts.find((p: any) => p.inlineData?.data)?.inlineData?.data;
+  if (!base64) throw new Error('No image returned');
+  return base64;
+}
+
+async function saveAndRespond(
+  base64: string, userId: string,
+  fullPrompt: string, size: string, quota: any, supabase: any
+) {
+  // APIYI (Nano Banana 2) only outputs PNG.
+  const mimeType = 'image/png';
   const dataUrl = `data:${mimeType};base64,${base64}`;
 
   const buffer = Buffer.from(base64, 'base64');
-  const filename = `${userId}/${Date.now()}.${outputFormat}`;
+  const filename = `${userId}/${Date.now()}.png`;
   await supabase.storage.from('generations').upload(filename, buffer, { contentType: mimeType, upsert: false });
   const { data: urlData } = supabase.storage.from('generations').getPublicUrl(filename);
 
@@ -228,7 +246,7 @@ async function processResult(
 
   return NextResponse.json({
     success: true, image: dataUrl, imageUrl: urlData.publicUrl,
-    size, format: outputFormat, prompt: fullPrompt,
+    size, format: 'png', prompt: fullPrompt,
     quota: { remaining: quota.remaining, total: quota.total },
   });
 }

@@ -4,6 +4,8 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/supabase/client';
 
+const FREE_QUOTA = 12;
+
 async function verifyIPN(body: string): Promise<boolean> {
   try {
     const verifyUrl = process.env.PAYPAL_SANDBOX === 'true'
@@ -64,13 +66,15 @@ export async function POST(req: Request) {
       console.log(`✅ Pro activated for ${clerkId} (${interval}, sub ${params.get('subscr_id')})`);
     }
 
-    // Subscription ended
-    if (txnType === 'subscr_cancel' || txnType === 'subscr_eot' || txnType === 'subscr_failed') {
+    // Subscription ended. Note: subscr_failed is NOT treated as an end —
+    // PayPal retries failed payments, so we only downgrade on a confirmed
+    // cancellation (subscr_cancel) or end-of-term (subscr_eot).
+    if (txnType === 'subscr_cancel' || txnType === 'subscr_eot') {
       await supabase.from('users').update({
         is_pro: false,
         pro_until: new Date().toISOString(),
-        quota_remaining: 12,
-        quota_total: 12,
+        quota_remaining: FREE_QUOTA,
+        quota_total: FREE_QUOTA,
       }).eq('clerk_id', clerkId);
 
       console.log(`⚠️ Pro ended for ${clerkId} (${txnType})`);

@@ -53,7 +53,7 @@ const en = {
       freePrice: '$0',
       freeDesc: 'For trying it out',
       freeFeatures: [
-        '12 generations / month',
+        '12 generations',
         '8 popular styles',
         'All aspect ratios',
         'Text-to-image & image-to-image',
@@ -154,7 +154,7 @@ const zh: typeof en = {
       freePrice: '$0',
       freeDesc: '试试水',
       freeFeatures: [
-        '每月 12 次生成',
+        '12 次生成',
         '8 种热门风格',
         '所有尺寸比例',
         '文生图 + 图生图',

@@ -10,8 +10,36 @@ export default function PricingSuccessPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   useEffect(() => {
-    const timer = setTimeout(() => setStatus('success'), 2000);
-    return () => clearTimeout(timer);
+    // PayPal activates Pro asynchronously via the IPN webhook, so poll the
+    // quota endpoint until Pro is confirmed rather than faking success.
+    let cancelled = false;
+    const maxAttempts = 15;   // ~30s total
+    const intervalMs = 2000;
+    let attempts = 0;
+
+    const check = async () => {
+      attempts += 1;
+      try {
+        const res = await fetch('/api/image/quota', { cache: 'no-store' });
+        const data = await res.json();
+        if (cancelled) return;
+        if (data.isPro) {
+          setStatus('success');
+          return;
+        }
+      } catch {
+        /* transient — keep polling until we run out of attempts */
+      }
+      if (cancelled) return;
+      if (attempts >= maxAttempts) {
+        setStatus('error');
+        return;
+      }
+      setTimeout(check, intervalMs);
+    };
+
+    check();
+    return () => { cancelled = true; };
   }, []);
 
   return (
