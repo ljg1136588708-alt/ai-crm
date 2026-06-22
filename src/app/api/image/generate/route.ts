@@ -39,6 +39,14 @@ const FREE_QUOTA = 12;
 const FREE_STYLES = ['写实摄影', '动漫', '水彩', '电影感', '赛博朋克', '油画', '素描', 'Q版'];
 
 // Create the user row on first use. Idempotent: won't overwrite an existing row's quota.
+// Refund one credit (called on generation failure)
+async function refundQuota(supabase: any, clerkId: string) {
+  const { data: user } = await supabase.from('users').select('quota_remaining').eq('clerk_id', clerkId).single();
+  if (user) {
+    await supabase.from('users').update({ quota_remaining: user.quota_remaining + 1 }).eq('clerk_id', clerkId);
+  }
+}
+
 async function ensureUser(supabase: any, clerkId: string) {
   await supabase.from('users').upsert(
     { clerk_id: clerkId, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA },
@@ -46,16 +54,40 @@ async function ensureUser(supabase: any, clerkId: string) {
   );
 }
 
-// Atomically check + deduct one credit via DB function (race-safe row lock).
+// Check + deduct one credit inline (no DB function dependency)
 async function checkQuota(supabase: any, clerkId: string) {
-  const { data } = await supabase.rpc('decrement_quota', { p_clerk_id: clerkId });
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row) return { allowed: false, remaining: 0, isPro: false };
+  const { data: user } = await supabase
+    .from('users')
+    .select('quota_remaining, quota_total, is_pro')
+    .eq('clerk_id', clerkId)
+    .single();
+
+  if (!user) return { allowed: false, remaining: 0, total: FREE_QUOTA, isPro: false };
+  if (user.is_pro) return { allowed: true, remaining: -1, total: -1, isPro: true };
+
+  if (user.quota_remaining <= 0) {
+    return { allowed: false, remaining: 0, total: user.quota_total, isPro: false };
+  }
+
+  // Deduct
+  const { data: updated } = await supabase
+    .from('users')
+    .update({ quota_remaining: user.quota_remaining - 1 })
+    .eq('clerk_id', clerkId)
+    .eq('quota_remaining', user.quota_remaining)  // optimistic lock
+    .select('quota_remaining, quota_total')
+    .single();
+
+  if (!updated) {
+    // Race condition — retry once
+    return checkQuota(supabase, clerkId);
+  }
+
   return {
-    allowed: row.allowed,
-    remaining: row.remaining,
-    total: row.total ?? FREE_QUOTA,
-    isPro: row.is_pro,
+    allowed: true,
+    remaining: updated.quota_remaining,
+    total: updated.quota_total,
+    isPro: false,
   };
 }
 
@@ -142,7 +174,7 @@ export async function POST(req: Request) {
     return processResult(result, outputFormat, userId, fullPrompt, size || 'auto', quota, supabase, isPro);
   } catch (err: any) {
     if (!isPro) {
-      await supabase.rpc('add_quota', { p_clerk_id: userId, p_amount: 1 });
+      await refundQuota(supabase, userId);
     }
     console.error('Image generation error:', err);
     const msg = err.message || '';
@@ -168,7 +200,7 @@ async function processResult(
   }
   if (!base64) {
     if (!isPro) {
-      await supabase.rpc('add_quota', { p_clerk_id: userId, p_amount: 1 });
+      await refundQuota(supabase, userId);
     }
     return NextResponse.json({ error: 'No image returned' }, { status: 500 });
   }
