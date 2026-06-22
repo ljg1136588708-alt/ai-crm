@@ -1,15 +1,23 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { useT } from '@/components/locale-provider';
+import { useUser } from '@clerk/nextjs';
 
 export default function PricingPage() {
   const t = useT().aifoto.pricing;
+  const { isSignedIn } = useUser();
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   const handleSubscribe = async () => {
+    if (!isSignedIn) {
+      router.push('/sign-in?redirect_url=/pricing');
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch('/api/checkout', { method: 'POST' });
@@ -31,7 +39,13 @@ export default function PricingPage() {
       <header className="border-b border-zinc-200 bg-white">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="text-lg font-bold tracking-tight">AI Foto</Link>
-          <Link href="/sign-in" className="text-sm text-zinc-600 hover:text-zinc-900">{t.signIn}</Link>
+          <div className="flex items-center gap-4">
+            {isSignedIn ? (
+              <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">Dashboard</Link>
+            ) : (
+              <Link href="/sign-in" className="text-sm text-zinc-600 hover:text-zinc-900">{t.signIn}</Link>
+            )}
+          </div>
         </div>
       </header>
 
