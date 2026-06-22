@@ -306,6 +306,7 @@ export default function GeneratePage() {
       </div>
 
       {/* Style selector */}
+      {quota && (
       <div className="mb-4">
         <p className="text-xs text-zinc-400 mb-2">
           {t.style} {!quota?.isPro && <span className="text-violet-400">({t.freeStylesNote})</span>}
@@ -340,6 +341,7 @@ export default function GeneratePage() {
           })}
         </div>
       </div>
+      )}
 
       {/* Aspect ratio */}
       <div className="mb-4">
