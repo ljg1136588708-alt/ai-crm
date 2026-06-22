@@ -48,10 +48,12 @@ async function refundQuota(supabase: any, clerkId: string) {
 }
 
 async function ensureUser(supabase: any, clerkId: string) {
-  await supabase.from('users').upsert(
-    { clerk_id: clerkId, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA },
-    { onConflict: 'clerk_id', ignoreDuplicates: true },
-  );
+  const { data: exists } = await supabase.from('users').select('clerk_id').eq('clerk_id', clerkId).single();
+  if (!exists) {
+    await supabase.from('users').insert({
+      clerk_id: clerkId, quota_remaining: FREE_QUOTA, quota_total: FREE_QUOTA,
+    });
+  }
 }
 
 // Check + deduct one credit inline (no DB function dependency)
