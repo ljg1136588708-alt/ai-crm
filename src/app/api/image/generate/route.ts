@@ -143,12 +143,12 @@ export async function POST(req: Request) {
           throw new Error(retryResult.error?.message || `API error ${retryResp.status}`);
         }
         // Use retry result
-        return processResult(retryResult, outputFormat, userId, fullPrompt, size, quota, supabase, isPro);
+        return processResult(retryResult, outputFormat, userId, fullPrompt, size || 'auto', quota, supabase, isPro);
       }
       throw new Error(result.error?.message || `API error ${response.status}`);
     }
 
-    return processResult(result, outputFormat, userId, fullPrompt, size, quota, supabase, isPro);
+    return processResult(result, outputFormat, userId, fullPrompt, size || 'auto', quota, supabase, isPro);
   } catch (err: any) {
     if (!isPro) {
       await supabase.from('users').update({ quota_remaining: quota.remaining + 1 }).eq('clerk_id', userId);
