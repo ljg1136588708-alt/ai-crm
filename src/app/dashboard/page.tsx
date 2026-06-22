@@ -155,7 +155,15 @@ export default function GeneratePage() {
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 402) {
-          setQuota({ remaining: 0, total: data.quota ?? 12, isPro: false, proSince: null, proUntil: null, proInterval: null });
+          // The 402 body's `quota` is the *remaining* count (0 when exhausted),
+          // not the total — keep the real total we already loaded so the badge
+          // shows e.g. "0 / 12", not "0 / 0".
+          setQuota((prev) => ({
+            remaining: 0,
+            total: prev?.total ?? 12,
+            isPro: false,
+            proSince: null, proUntil: null, proInterval: null,
+          }));
           throw new Error(t.quotaUsed);
         }
         throw new Error(data.error || t.genFailed);
