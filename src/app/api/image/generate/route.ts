@@ -35,7 +35,7 @@ const SIZES: Record<string, string> = {
   '16:9': '1792x1024', '21:9': '2560x1080',
 };
 
-const FREE_QUOTA = 30;
+const FREE_QUOTA = 12;
 const FREE_STYLES = ['写实摄影', '动漫', '水彩', '电影感', '赛博朋克', '油画', '素描', 'Q版'];
 
 // Create the user row on first use. Idempotent: won't overwrite an existing row's quota.
