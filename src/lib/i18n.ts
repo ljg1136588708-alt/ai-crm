@@ -60,6 +60,7 @@ const en = {
       signIn: 'Sign In',
       checkoutFailed: 'Checkout failed',
       networkError: 'Network error. Please try again.',
+      dashboard: 'Dashboard',
     },
     success: {
       loading: 'Confirming your subscription...',
@@ -133,6 +134,7 @@ const zh: typeof en = {
       signIn: '登录',
       checkoutFailed: '结算失败',
       networkError: '网络错误，请重试。',
+      dashboard: '控制台',
     },
     success: {
       loading: '正在确认订阅…',
