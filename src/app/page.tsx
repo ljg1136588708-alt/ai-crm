@@ -29,7 +29,7 @@ export default function LandingPage() {
 
       <section className="max-w-2xl mx-auto text-center pt-32 pb-20 px-6">
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
-          {t.heroTitle}<br />{t.heroTitle2}
+          {t.heroTitle}
         </h1>
         <p className="text-xl text-zinc-500 mb-10 leading-relaxed">
           {t.heroDesc}
