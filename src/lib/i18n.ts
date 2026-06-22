@@ -3,7 +3,7 @@ export type Locale = 'en' | 'zh';
 const en = {
   aifoto: {
     landing: {
-      signIn: 'Sign In', getStarted: 'Get Started', pricing: 'Pricing',
+      signIn: 'Sign In', getStarted: 'Get Started', pricing: 'Subscribe',
       heroTitle: 'Your photos,',
       heroTitle2: 'any style you imagine',
       heroDesc: 'Upload a photo or describe what you want. AI generates stunning images in 20+ styles — anime, photorealistic, oil painting, cyberpunk, and more.',
@@ -75,7 +75,7 @@ const en = {
 const zh: typeof en = {
   aifoto: {
     landing: {
-      signIn: '登录', getStarted: '免费开始', pricing: '定价',
+      signIn: '登录', getStarted: '免费开始', pricing: '订阅',
       heroTitle: '你的照片，',
       heroTitle2: '任意风格',
       heroDesc: '上传照片或描述你想要的画面。AI 生成 20+ 风格的精美图片 — 动漫、写实、油画、赛博朋克等。',
