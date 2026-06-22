@@ -8,7 +8,7 @@ import { useUser } from '@clerk/nextjs';
 
 export default function PricingPage() {
   const t = useT().aifoto.pricing;
-  const { isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   const [loading, setLoading] = useState<'monthly' | 'yearly' | null>(null);
   const router = useRouter();
 
@@ -76,7 +76,7 @@ export default function PricingPage() {
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="text-lg font-bold tracking-tight">AI Foto</Link>
           <div className="flex items-center gap-4">
-            {isSignedIn ? (
+            {!isLoaded ? null : isSignedIn ? (
               <>
                 <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">{t.dashboard}</Link>
                 <Link href="/dashboard" title={t.dashboard}>

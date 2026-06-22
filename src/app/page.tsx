@@ -5,14 +5,14 @@ import { useUser } from '@clerk/nextjs';
 
 export default function LandingPage() {
   const t = useT().aifoto.landing;
-  const { isSignedIn, user } = useUser();
+  const { isLoaded, isSignedIn, user } = useUser();
   return (
     <main className="min-h-screen">
       <nav className="flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
         <span className="text-xl font-bold tracking-tight">AI Foto</span>
         <div className="flex items-center gap-4">
           <Link href="/pricing" className="text-sm text-zinc-600 hover:text-zinc-900">{t.pricing}</Link>
-          {isSignedIn ? (
+          {!isLoaded ? null : isSignedIn ? (
             <>
               <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">
                 {t.dashboard}
@@ -40,7 +40,7 @@ export default function LandingPage() {
           {t.heroDesc}
         </p>
         <div className="flex gap-4 justify-center">
-          {!isSignedIn && (
+          {isLoaded && !isSignedIn && (
             <Link
               href="/sign-up"
               className="inline-flex items-center justify-center rounded-lg bg-violet-600 text-white px-8 py-3 text-base font-medium hover:bg-violet-700"
