@@ -4,8 +4,8 @@ const en = {
   aifoto: {
     landing: {
       signIn: 'Sign In', getStarted: 'Get Started', pricing: 'Subscribe', dashboard: 'Dashboard',
-      heroTitle: 'Your photos, any style you imagine',
-      heroDesc: 'Upload a photo or describe what you want. AI generates stunning images in 20+ styles — anime, photorealistic, oil painting, cyberpunk, and more.',
+      heroTitle: 'One Photo. Infinite Styles.',
+      heroDesc: 'Upload a photo or type a prompt — AI instantly creates your artwork. 20+ styles: anime, oil painting, cyberpunk, and more. No design skills needed. Start free.',
       tryFree: 'Try Free — No Credit Card',
     },
     dashboard: {
@@ -101,8 +101,8 @@ const zh: typeof en = {
   aifoto: {
     landing: {
       signIn: '登录', getStarted: '免费开始', pricing: '订阅', dashboard: '控制台',
-      heroTitle: '你的照片，任意风格',
-      heroDesc: '上传照片或描述你想要的画面。AI 生成 20+ 风格的精美图片 — 动漫、写实、油画、赛博朋克等。',
+      heroTitle: '一张照片，万千风格',
+      heroDesc: '上传照片或描述你想要的画面，AI 即刻帮你生成专属作品。动漫、写实、油画、赛博朋克… 20+ 风格随心切换，零门槛，免费开始。',
       tryFree: '免费试用 — 无需绑卡',
     },
     dashboard: {
