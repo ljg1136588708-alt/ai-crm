@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/components/locale-provider';
 
 const STYLES = [
   '写实摄影', '动漫', '水彩', '素描', '赛博朋克', '油画', '电影感',
@@ -51,6 +52,7 @@ type GenerationResult = {
 };
 
 export default function GeneratePage() {
+  const t = useT().aifoto.dashboard;
   const [tab, setTab] = useState<'text' | 'image'>('text');
   const [prompt, setPrompt] = useState('');
   const [style, setStyle] = useState('');
@@ -129,7 +131,7 @@ export default function GeneratePage() {
       if (!res.ok) {
         if (res.status === 402) {
           setQuota({ remaining: 0, total: data.quota ?? 5, isPro: false });
-          throw new Error('Free quota used up. Upgrade to Pro.');
+          throw new Error(t.quotaUsed);
         }
         throw new Error(data.error || 'Failed');
       }
@@ -166,15 +168,15 @@ export default function GeneratePage() {
         <div className="flex items-center justify-between mb-4">
           {quota.isPro ? (
             <span className="text-xs px-2 py-1 rounded-full bg-violet-100 text-violet-700 font-medium">
-              ⭐ PRO · Unlimited
+              {t.pro}
             </span>
           ) : (
             <>
               <span className={`text-xs px-2 py-1 rounded-full ${quota.remaining > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>
-                {quota.remaining} / {quota.total} free
+                {quota.remaining} / {quota.total} {t.free}
               </span>
               {quota.remaining === 0 && (
-                <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">Upgrade →</Link>
+                <Link href="/pricing" className="text-xs text-violet-600 font-medium hover:underline">{t.upgrade}</Link>
               )}
             </>
           )}
@@ -191,7 +193,7 @@ export default function GeneratePage() {
               tab === m ? 'bg-white text-violet-600 shadow-sm' : 'text-zinc-500 hover:text-zinc-700'
             }`}
           >
-            {m === 'text' ? '✍️ 文生图' : '📸 图生图'}
+            {m === 'text' ? t.textToImage : t.imageToImage}
           </button>
         ))}
       </div>
@@ -211,7 +213,7 @@ export default function GeneratePage() {
                 <button
                   onClick={() => setReferenceImage(null)}
                   className="absolute top-3 right-3 w-7 h-7 bg-white/90 hover:bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-900 rounded-full text-sm flex items-center justify-center shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                  title="移除图片"
+                  title={t.removeImage}
                 >
                   ×
                 </button>
@@ -220,7 +222,7 @@ export default function GeneratePage() {
                 onClick={() => fileRef.current?.click()}
                 className="ml-4 px-4 py-2 border border-dashed border-zinc-300 rounded-lg text-xs text-zinc-400 hover:text-violet-600 hover:border-violet-300 transition-colors flex items-center gap-1"
               >
-                🔄 换图
+                {t.changeImage}
               </button>
             </div>
           ) : (
@@ -229,8 +231,8 @@ export default function GeneratePage() {
               className="border-2 border-dashed border-zinc-300 rounded-xl p-10 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-50/30 transition-colors"
             >
               <div className="text-4xl mb-3">🖼️</div>
-              <p className="text-sm text-zinc-500 font-medium">点击上传图片</p>
-              <p className="text-xs text-zinc-400 mt-1">支持 JPG、PNG、WebP，最大 10MB</p>
+              <p className="text-sm text-zinc-500 font-medium">{t.uploadClick}</p>
+              <p className="text-xs text-zinc-400 mt-1">{t.uploadHint}</p>
             </div>
           )}
           <input ref={fileRef} type="file" accept="image/*" onChange={handleFile} className="hidden" />
@@ -241,7 +243,7 @@ export default function GeneratePage() {
         <textarea
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder={tab === 'text' ? '描述你想要生成的图片…' : '可选：描述你想要的风格或变化…'}
+          placeholder={tab === 'text' ? t.promptText : t.promptImage}
           rows={3}
           className="w-full border border-zinc-200 rounded-lg px-4 py-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-transparent"
         />
@@ -249,7 +251,7 @@ export default function GeneratePage() {
 
       {/* Style selector */}
       <div className="mb-4">
-        <p className="text-xs text-zinc-400 mb-2">风格（可选）</p>
+        <p className="text-xs text-zinc-400 mb-2">{t.style}</p>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
           {STYLES.map((s) => (
             <button
@@ -276,7 +278,7 @@ export default function GeneratePage() {
 
       {/* Aspect ratio */}
       <div className="mb-4">
-        <p className="text-xs text-zinc-400 mb-2">尺寸比例</p>
+        <p className="text-xs text-zinc-400 mb-2">{t.aspectRatio}</p>
         <div className="flex gap-1.5">
           {RATIOS.map((r) => (
             <button
@@ -298,7 +300,7 @@ export default function GeneratePage() {
         disabled={loading || (tab === 'text' && !prompt.trim()) || (tab === 'image' && !referenceImage)}
         className="w-full py-3 text-base bg-violet-600 hover:bg-violet-700 disabled:bg-zinc-300"
       >
-        {loading ? '⏳ 生成中…' : '🚀 生成'}
+        {loading ? t.generating : t.generate}
       </Button>
 
       {/* Error */}
@@ -316,7 +318,7 @@ export default function GeneratePage() {
           </div>
           <p className="text-xs text-zinc-400 mt-2 truncate">{result.prompt}</p>
           <Button onClick={download} className="mt-3 w-full" variant="outline">
-            💾 下载
+            💾 {t.download}
           </Button>
         </div>
       )}
@@ -324,7 +326,7 @@ export default function GeneratePage() {
       {/* History */}
       {history.length > 0 && (
         <div className="mt-12">
-          <h2 className="text-lg font-semibold mb-4">📚 历史记录</h2>
+          <h2 className="text-lg font-semibold mb-4">{t.history}</h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
             {history.filter(item => item.image && item.image.length > 10).map((item, i) => (
               <button

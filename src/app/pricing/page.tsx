@@ -1,13 +1,13 @@
 'use client';
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { useT } from '@/components/locale-provider';
 
 export default function PricingPage() {
+  const t = useT().aifoto.pricing;
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubscribe = async () => {
     setLoading(true);
@@ -36,23 +36,16 @@ export default function PricingPage() {
       </header>
 
       <section className="max-w-2xl mx-auto px-4 py-20 text-center">
-        <h1 className="text-3xl font-bold mb-4">Upgrade to Pro</h1>
-        <p className="text-zinc-500 mb-12">Free trial: 50 generations. Pro: unlimited.</p>
+        <h1 className="text-3xl font-bold mb-4">{t.title}</h1>
+        <p className="text-zinc-500 mb-12">{t.subtitle}</p>
 
         <div className="max-w-sm mx-auto border border-violet-200 rounded-2xl p-8 bg-violet-50/50">
-          <div className="text-sm font-medium text-violet-600 mb-2">PRO</div>
-          <div className="text-4xl font-bold mb-1">$9.99<span className="text-lg text-zinc-400">/mo</span></div>
-          <p className="text-sm text-zinc-500 mb-6">Cancel anytime</p>
+          <div className="text-sm font-medium text-violet-600 mb-2">{t.pro}</div>
+          <div className="text-4xl font-bold mb-1">$9.99<span className="text-lg text-zinc-400">{t.perMo}</span></div>
+          <p className="text-sm text-zinc-500 mb-6">{t.cancel}</p>
 
           <ul className="text-sm text-zinc-600 space-y-2 mb-8 text-left">
-            {[
-              'Unlimited image generations',
-              'All 21 styles',
-              'All aspect ratios & formats',
-              'Generate from photos or text',
-              'Priority generation speed',
-              'Download in full resolution',
-            ].map((f) => (
+            {t.features.map((f) => (
               <li key={f} className="flex items-start gap-2">
                 <span className="text-violet-600">✓</span> {f}
               </li>
@@ -67,16 +60,16 @@ export default function PricingPage() {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Redirecting...
+                {t.redirecting}
               </>
             ) : (
-              'Subscribe — $9.99/mo'
+              t.subscribe
             )}
           </Button>
         </div>
 
         <p className="text-xs text-zinc-400 mt-8">
-          Secure payment via PayPal. Cancel anytime.
+          {t.footer}
         </p>
       </section>
 
