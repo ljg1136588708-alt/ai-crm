@@ -5,18 +5,24 @@ import { getServiceClient } from '@/lib/supabase/client';
 export async function GET() {
   const supabase = getServiceClient();
 
-  // Clear tables
-  const { error: e1 } = await supabase.from('generations').delete().neq('id', 0);
-  const { error: e2 } = await supabase.from('users').delete().neq('clerk_id', '');
+  // Delete all rows
+  const { data: allGens } = await supabase.from('generations').select('id');
+  for (const row of allGens || []) {
+    await supabase.from('generations').delete().eq('id', row.id);
+  }
+
+  const { data: allUsers } = await supabase.from('users').select('clerk_id');
+  for (const row of allUsers || []) {
+    await supabase.from('users').delete().eq('clerk_id', row.clerk_id);
+  }
 
   // Verify
-  const { data: users } = await supabase.from('users').select('count');
-  const { data: gens } = await supabase.from('generations').select('count');
+  const { data: users } = await supabase.from('users').select('*');
+  const { data: gens } = await supabase.from('generations').select('*');
 
   return NextResponse.json({
     success: true,
     remainingUsers: users?.length || 0,
     remainingGenerations: gens?.length || 0,
-    errors: { users: e2?.message || null, generations: e1?.message || null },
   });
 }
