@@ -41,12 +41,9 @@ export default function PricingPage() {
           <Link href="/" className="text-lg font-bold tracking-tight">AI Foto</Link>
           <div className="flex items-center gap-4">
             {isSignedIn ? (
-              <>
-                <Link href="/dashboard" className="text-sm text-violet-600 font-medium hover:text-violet-700">{t.dashboard}</Link>
-                <Link href="/dashboard" title={t.dashboard}>
-                  <img src={user?.imageUrl} alt="" className="w-8 h-8 rounded-full border-2 border-zinc-200 hover:border-violet-400 transition-colors" />
-                </Link>
-              </>
+              <Link href="/dashboard" title={t.dashboard}>
+                <img src={user?.imageUrl} alt="" className="w-8 h-8 rounded-full border-2 border-zinc-200 hover:border-violet-400 transition-colors" />
+              </Link>
             ) : (
               <Link href="/sign-in" className="text-sm text-zinc-600 hover:text-zinc-900">{t.signIn}</Link>
             )}
