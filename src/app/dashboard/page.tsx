@@ -168,9 +168,8 @@ export default function GeneratePage() {
         timestamp: Date.now(),
       };
       setResult(genResult);
+      fetchQuota();
       refreshHistory();
-      // Refresh quota
-      setQuota(null);
     } catch (err: any) {
       setError(err.message);
     } finally {

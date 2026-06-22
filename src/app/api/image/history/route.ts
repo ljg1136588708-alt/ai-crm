@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     success: true,
     items: data || [],
     total: count || 0,
-    quota: user || { quota_remaining: 0, quota_total: 50 },
+    quota: user || { quota_remaining: 0, quota_total: 12 },
   });
 }
 
