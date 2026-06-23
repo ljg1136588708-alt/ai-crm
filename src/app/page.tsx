@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useT } from '@/components/locale-provider';
 import { useUser, UserButton } from '@clerk/nextjs';
 import { Logo } from '@/components/logo';
@@ -78,15 +79,17 @@ export default function LandingPage() {
       {/* Showcase gallery */}
       <section className="w-full max-w-7xl mx-auto px-6 pb-20">
         <h2 className="text-center text-sm font-medium text-zinc-400 mb-6">{t.showcase}</h2>
-        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {SHOWCASE.map((src, i) => (
-            <img
-              key={i}
-              src={src}
-              alt=""
-              loading="lazy"
-              className="mb-3 w-full rounded-xl border border-zinc-100 break-inside-avoid"
-            />
+            <div key={i} className="relative aspect-square overflow-hidden rounded-xl border border-zinc-100">
+              <Image
+                src={src}
+                alt={`${t.showcase} ${i + 1}`}
+                fill
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                className="object-cover"
+              />
+            </div>
           ))}
         </div>
       </section>
