@@ -50,8 +50,15 @@ export default function LandingPage() {
       </section>
 
       <footer className="mt-auto max-w-2xl mx-auto text-center px-6 py-8 text-sm text-zinc-400">
-        {t.contact}:{' '}
-        <span className="text-zinc-900">ljg1136588708@gmail.com</span>
+        <p>
+          {t.contact}:{' '}
+          <span className="text-zinc-900">ljg1136588708@gmail.com</span>
+        </p>
+        <p className="mt-2">
+          <Link href="/privacy" className="hover:text-zinc-700">{t.privacy}</Link>
+          <span className="mx-2">·</span>
+          <Link href="/terms" className="hover:text-zinc-700">{t.terms}</Link>
+        </p>
       </footer>
     </main>
   );
