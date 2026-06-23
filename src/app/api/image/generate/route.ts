@@ -123,6 +123,12 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Provide prompt or reference image' }, { status: 400 });
   }
 
+  // Guard against oversized reference images server-side (a 10MB file is
+  // ~13.6M base64 chars). The frontend also limits this, but don't trust it.
+  if (referenceImage && referenceImage.length > 14_000_000) {
+    return NextResponse.json({ error: 'Reference image too large. Use an image under 10MB.' }, { status: 413 });
+  }
+
   const { getServiceClient } = await import('@/lib/supabase/client');
   const supabase = getServiceClient();
 

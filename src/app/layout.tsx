@@ -6,9 +6,27 @@ import { LocaleSwitcher } from '@/components/locale-switcher';
 import { type Locale } from '@/lib/i18n';
 import './globals.css';
 
+const OG_IMAGE = 'https://zthvfbnxmnwtdcpdccfi.supabase.co/storage/v1/object/public/generations/user_3FVJAALxEi6NUGFuiIPgamwz8JY/1782154339162.png';
+const SITE_DESC = 'Create beautiful AI-generated images from text or photos. 20+ styles, any size, instant results.';
+
 export const metadata: Metadata = {
+  metadataBase: new URL('https://aicrm.shangqiushi.com'),
   title: 'AI Foto — Generate stunning images with AI',
-  description: 'Create beautiful AI-generated images from text or photos. Multiple styles, any size, instant results.',
+  description: SITE_DESC,
+  openGraph: {
+    title: 'AI Foto — Generate stunning images with AI',
+    description: SITE_DESC,
+    url: 'https://aicrm.shangqiushi.com',
+    siteName: 'AI Foto',
+    images: [OG_IMAGE],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'AI Foto — Generate stunning images with AI',
+    description: SITE_DESC,
+    images: [OG_IMAGE],
+  },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
