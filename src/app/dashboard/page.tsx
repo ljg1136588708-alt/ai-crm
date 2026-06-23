@@ -322,6 +322,15 @@ export default function GeneratePage() {
           {t.style} {!quota?.isPro && <span className="text-violet-400">({t.freeStylesNote})</span>}
         </p>
         <div className="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto">
+          {/* Smart (auto) — default: no forced style, let the AI decide */}
+          <button
+            onClick={() => { setStyle(''); setAspectRatio('智能'); }}
+            className={`px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+              style === '' ? 'bg-violet-600 text-white' : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200'
+            }`}
+          >
+            ✨ {t.autoStyle}
+          </button>
           {STYLES.map((s) => {
             const isLocked = !quota?.isPro && !FREE_STYLES.includes(s);
             return (
