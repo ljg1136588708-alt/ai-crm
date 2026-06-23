@@ -7,18 +7,26 @@ import { Logo } from '@/components/logo';
 // Curated showcase images for the landing gallery (public Supabase URLs).
 const SB = 'https://zthvfbnxmnwtdcpdccfi.supabase.co/storage/v1/object/public/generations/user_3FVJAALxEi6NUGFuiIPgamwz8JY';
 const SHOWCASE = [
-  `${SB}/1782203077759.png`,
-  `${SB}/1782202495817.png`,
-  `${SB}/1782202916902.png`,
-  `${SB}/1782203005125.png`,
-  `${SB}/1782202830719.png`,
-  `${SB}/1782202674577.png`,
-  `${SB}/1782202338755.png`,
-  `${SB}/1782202456590.png`,
-  `${SB}/1782202781940.png`,
-  `${SB}/1782202637262.png`,
-  `${SB}/1782202367619.png`,
-  `${SB}/1782202754465.png`,
+  `${SB}/1782154339162.png`, // 赛博朋克 胖橘猫
+  `${SB}/1782202200804.png`, // 仙侠 水墨女子
+  `${SB}/1782203077759.png`, // 美漫 小老虎
+  `${SB}/1782202495817.png`, // 吉卜力 女生
+  `${SB}/1782202272744.png`, // 3D卡通 Q版
+  `${SB}/1782203005125.png`, // 电影感 古风
+  `${SB}/1782202674577.png`, // Q版 小龙
+  `${SB}/1782202338755.png`, // 写实 男生
+  `${SB}/1782201892700.png`, // 手办
+  `${SB}/1782202456590.png`, // 日漫 女生
+  `${SB}/1782202916902.png`, // 科幻 小老鼠
+  `${SB}/1782202003785.png`, // 吉卜力
+  `${SB}/1782202830719.png`, // 贴纸 小鸡
+  `${SB}/1782202781940.png`, // 游戏CG 小蛇
+  `${SB}/1782202367619.png`, // 国漫3D 男生
+  `${SB}/1782201967394.png`, // Q版
+  `${SB}/1782202754465.png`, // 废土 小蛇
+  `${SB}/1782202637262.png`, // Q版 小龙
+  `${SB}/1782154275856.png`, // 素描
+  `${SB}/1782154235554.png`, // 写实
 ];
 
 export default function LandingPage() {
