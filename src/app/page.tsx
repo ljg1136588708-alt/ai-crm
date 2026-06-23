@@ -76,9 +76,9 @@ export default function LandingPage() {
       </section>
 
       {/* Showcase gallery */}
-      <section className="w-full max-w-5xl mx-auto px-6 pb-20">
+      <section className="w-full max-w-7xl mx-auto px-6 pb-20">
         <h2 className="text-center text-sm font-medium text-zinc-400 mb-6">{t.showcase}</h2>
-        <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
+        <div className="columns-2 sm:columns-3 lg:columns-4 xl:columns-5 gap-3">
           {SHOWCASE.map((src, i) => (
             <img
               key={i}
