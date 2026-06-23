@@ -4,6 +4,23 @@ import { useT } from '@/components/locale-provider';
 import { useUser, UserButton } from '@clerk/nextjs';
 import { Logo } from '@/components/logo';
 
+// Curated showcase images for the landing gallery (public Supabase URLs).
+const SB = 'https://zthvfbnxmnwtdcpdccfi.supabase.co/storage/v1/object/public/generations/user_3FVJAALxEi6NUGFuiIPgamwz8JY';
+const SHOWCASE = [
+  `${SB}/1782203077759.png`,
+  `${SB}/1782202495817.png`,
+  `${SB}/1782202916902.png`,
+  `${SB}/1782203005125.png`,
+  `${SB}/1782202830719.png`,
+  `${SB}/1782202674577.png`,
+  `${SB}/1782202338755.png`,
+  `${SB}/1782202456590.png`,
+  `${SB}/1782202781940.png`,
+  `${SB}/1782202637262.png`,
+  `${SB}/1782202367619.png`,
+  `${SB}/1782202754465.png`,
+];
+
 export default function LandingPage() {
   const t = useT().aifoto.landing;
   const { isLoaded, isSignedIn } = useUser();
@@ -31,7 +48,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      <section className="max-w-2xl mx-auto text-center pt-32 pb-20 px-6">
+      <section className="max-w-2xl mx-auto text-center pt-28 pb-12 px-6">
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
           {t.heroTitle}
         </h1>
@@ -47,6 +64,22 @@ export default function LandingPage() {
               {t.tryFree}
             </Link>
           )}
+        </div>
+      </section>
+
+      {/* Showcase gallery */}
+      <section className="w-full max-w-5xl mx-auto px-6 pb-20">
+        <h2 className="text-center text-sm font-medium text-zinc-400 mb-6">{t.showcase}</h2>
+        <div className="columns-2 sm:columns-3 lg:columns-4 gap-3">
+          {SHOWCASE.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt=""
+              loading="lazy"
+              className="mb-3 w-full rounded-xl border border-zinc-100 break-inside-avoid"
+            />
+          ))}
         </div>
       </section>
 

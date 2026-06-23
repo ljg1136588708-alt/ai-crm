@@ -10,6 +10,7 @@ const en = {
       contact: 'Contact',
       privacy: 'Privacy',
       terms: 'Terms',
+      showcase: 'Made with AI Foto',
     },
     dashboard: {
       textToImage: '✍️ Text to Image',
@@ -115,6 +116,7 @@ const zh: typeof en = {
       contact: '联系我们',
       privacy: '隐私政策',
       terms: '服务条款',
+      showcase: '用 AI Foto 创作',
     },
     dashboard: {
       textToImage: '✍️ 文生图',
