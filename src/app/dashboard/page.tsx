@@ -213,7 +213,9 @@ export default function GeneratePage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-6">
+    <div className="max-w-6xl mx-auto px-4 py-6">
+      {/* Generation form stays in a comfortable narrow column */}
+      <div className="max-w-2xl mx-auto">
       {/* Quota badge */}
       {quota && (
         <div className="flex items-center justify-between mb-4">
@@ -397,12 +399,13 @@ export default function GeneratePage() {
           </Button>
         </div>
       )}
+      </div>
 
-      {/* History */}
+      {/* History — wider grid to use the horizontal space */}
       {history.length > 0 && (
         <div className="mt-12">
           <h2 className="text-lg font-semibold mb-4">{t.history}</h2>
-          <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
             {history.filter(item => item.image && item.image.length > 10).map((item, i) => (
               <div key={item.id || i} className="relative group">
                 <button
