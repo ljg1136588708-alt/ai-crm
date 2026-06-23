@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Loader2, Check } from 'lucide-react';
 import { useT } from '@/components/locale-provider';
 import { useUser, UserButton } from '@clerk/nextjs';
+import { Logo } from '@/components/logo';
 
 export default function PricingPage() {
   const t = useT().aifoto.pricing;
@@ -74,7 +75,7 @@ export default function PricingPage() {
     <div className="min-h-screen">
       <header className="border-b border-zinc-200 bg-white">
         <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight">AI Foto</Link>
+          <Link href="/"><Logo /></Link>
           <div className="flex items-center gap-4">
             {!isLoaded ? null : isSignedIn ? (
               <>

@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useT } from '@/components/locale-provider';
 import { useUser, UserButton } from '@clerk/nextjs';
+import { Logo } from '@/components/logo';
 
 export default function LandingPage() {
   const t = useT().aifoto.landing;
@@ -9,7 +10,7 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <nav className="w-full flex items-center justify-between px-6 py-4 max-w-3xl mx-auto">
-        <span className="text-xl font-bold tracking-tight">AI Foto</span>
+        <Logo />
         <div className="flex items-center gap-4">
           <Link href="/pricing" className="text-sm text-zinc-600 hover:text-zinc-900">{t.pricing}</Link>
           {!isLoaded ? null : isSignedIn ? (
