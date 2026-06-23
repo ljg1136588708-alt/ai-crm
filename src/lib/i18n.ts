@@ -36,7 +36,8 @@ const en = {
       freeStylesNote: 'Free: 8 styles. Pro: all 21.',
       styleLocked: 'Pro only',
       proSince: 'Pro since',
-      proUntil: 'Pro until',
+      proUntil: 'Valid until',
+      autoRenew: 'auto-renews',
       proMonthly: 'Monthly',
       proYearly: 'Yearly',
       styleNames: {
@@ -138,7 +139,8 @@ const zh: typeof en = {
       freeStylesNote: '免费：8 种风格。Pro：全部 21 种。',
       styleLocked: 'Pro 专属',
       proSince: 'Pro 开通于',
-      proUntil: 'Pro 到期',
+      proUntil: '有效期至',
+      autoRenew: '自动续费',
       proMonthly: '月付',
       proYearly: '年付',
       styleNames: {

@@ -231,8 +231,8 @@ export default function GeneratePage() {
                 </span>
               )}
               {quota.proUntil && (
-                <span className="text-xs text-amber-500 ml-2">
-                  {t.proUntil} {new Date(quota.proUntil).toLocaleDateString()}
+                <span className="text-xs text-zinc-400 ml-2">
+                  {t.proUntil} {new Date(quota.proUntil).toLocaleDateString()} · {t.autoRenew}
                 </span>
               )}
             </div>

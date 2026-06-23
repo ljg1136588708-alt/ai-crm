@@ -61,6 +61,12 @@ export async function POST(req: Request) {
       const itemNumber = params.get('item_number') || '';
       const interval = itemNumber === 'aifoto-pro-yearly' ? 'yearly' : 'monthly';
 
+      // Next billing date = now + one billing period. Shown to the user as the
+      // current period end / "valid until" date (the sub auto-renews).
+      const nextBilling = new Date();
+      if (interval === 'yearly') nextBilling.setFullYear(nextBilling.getFullYear() + 1);
+      else nextBilling.setMonth(nextBilling.getMonth() + 1);
+
       // Only set pro_since on first activation (don't overwrite on renewal)
       const { data: existing } = await supabase.from('users').select('pro_since').eq('clerk_id', clerkId).single();
 
@@ -69,6 +75,7 @@ export async function POST(req: Request) {
         is_pro: true,
         pro_interval: interval,
         pro_since: existing?.pro_since || new Date().toISOString(),
+        pro_until: nextBilling.toISOString(),
         subscr_id: params.get('subscr_id') || Date.now().toString(),
         quota_remaining: -1,
         quota_total: -1,
