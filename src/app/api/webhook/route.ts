@@ -38,7 +38,18 @@ export async function POST(req: Request) {
   const txnType = params.get('txn_type') || '';
   const clerkId = params.get('custom') || '';
 
+  // Log every verified IPN's key fields so payments can be traced in Vercel Logs.
+  console.log('IPN received:', {
+    txn_type: txnType,
+    payment_status: params.get('payment_status') || '',
+    custom: clerkId,
+    item_number: params.get('item_number') || '',
+    subscr_id: params.get('subscr_id') || '',
+    amount: params.get('mc_gross') || params.get('amount3') || '',
+  });
+
   if (!clerkId) {
+    console.warn('IPN missing custom (clerkId) — ignoring');
     return NextResponse.json({ received: true });
   }
 

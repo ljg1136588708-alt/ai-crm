@@ -5,6 +5,12 @@ import { auth } from '@clerk/nextjs/server';
 const BUSINESS = process.env.PAYPAL_BUSINESS_EMAIL!;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://aicrm.shangqiushi.com';
 
+// Use sandbox checkout when PAYPAL_SANDBOX=true so the whole flow can be tested
+// for free. Must match the IPN verification host used in the webhook.
+const PAYPAL_URL = process.env.PAYPAL_SANDBOX === 'true'
+  ? 'https://www.sandbox.paypal.com/cgi-bin/webscr'
+  : 'https://www.paypal.com/cgi-bin/webscr';
+
 export async function POST(req: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -33,6 +39,6 @@ export async function POST(req: Request) {
     charset: 'utf-8',
   });
 
-  const url = `https://www.paypal.com/cgi-bin/webscr?${params.toString()}`;
+  const url = `${PAYPAL_URL}?${params.toString()}`;
   return NextResponse.json({ url });
 }
